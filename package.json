@@ -7,8 +7,11 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=frontend\"",
-    "build": "concurrently \"npm run build --workspace=server\" \"npm run build --workspace=frontend\"",
-    "start": "concurrently \"npm run start --workspace=server\" \"npm run start --workspace=frontend\"",
+    "build": "npm run build --workspace=server && npm run build --workspace=frontend",
+    "start": "npm run start --workspace=server",
     "typecheck": "concurrently \"npm run typecheck --workspace=server\" \"npm run typecheck --workspace=frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
   }
 }
