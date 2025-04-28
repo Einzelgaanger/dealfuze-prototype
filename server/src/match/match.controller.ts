@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { MatchService } from './match.service';
 import { Match } from './match.schema';
-import { AuthGuard } from '../middleware/auth.middleware';
+import { JwtAuthGuard } from '../middleware/auth.middleware';
 
 @Controller('matches')
-@UseGuards(AuthGuard)
+@UseGuards(JwtAuthGuard)
 export class MatchController {
   constructor(private readonly matchService: MatchService) {}
 

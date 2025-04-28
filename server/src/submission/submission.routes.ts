@@ -11,8 +11,19 @@ import FormModel from "../db/models/form.schema";
 import MatchCriteriaModel from "../db/models/matchCriteria.schema";
 import PipelineModel from "../db/models/pipeline.schema";
 import PersonalityModel from "../db/models/personality.schema";
+import { Router } from 'express';
+import { SubmissionController } from './submission.controller';
+import { SubmissionService } from './submission.service';
+import { getModelToken } from '@nestjs/mongoose';
+import { Submission } from './submission.schema';
+import { Model } from 'mongoose';
 
-const router = express.Router();
+const router = Router();
+
+// Get the model through NestJS's dependency injection
+const submissionModel = getModelToken(Submission.name);
+const submissionService = new SubmissionService(submissionModel as Model<Submission>);
+const controller = new SubmissionController(submissionService);
 
 const formIdValidation = [
   param("formId").isMongoId().withMessage("Invalid form ID format"),
@@ -165,5 +176,68 @@ router.post(
     });
   }
 );
+
+// Form submission routes
+router.post('/:formId/submit', async (req: Request, res: Response) => {
+  try {
+    const result = await controller.handleFormSubmit(
+      req.params.formId,
+      req.body,
+      req.headers['user-agent'] as string,
+      req.ip
+    );
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get submissions for a form
+router.get('/:formId/submissions', async (req: Request, res: Response) => {
+  try {
+    const result = await controller.getSubmissionsByFormId(
+      req.params.formId,
+      req.query.page as string,
+      req.query.limit as string
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get a specific submission
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const result = await controller.getSubmissionById(req.params.id);
+    if (!result) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete submissions
+router.post('/delete', async (req: Request, res: Response) => {
+  try {
+    await controller.deleteSubmissions(req.body.submissionIds);
+    res.status(200).json({ message: 'Submissions deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get submission stats
+router.get('/stats/:formId', async (req: Request, res: Response) => {
+  try {
+    const result = await controller.getSubmissionStats(req.params.formId);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;

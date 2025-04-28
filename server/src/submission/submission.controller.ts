@@ -4,8 +4,9 @@ import SubmissionModel from "../db/models/submission.schema";
 import submissionService from "./submission.service";
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { SubmissionService } from './submission.service';
-import { SubmissionDocument, SubmissionStatus } from '../types/submission.type';
+import { SubmissionDocument, SubmissionStatus, ISubmission } from '../types/submission.type';
 import { JwtAuthGuard } from '../middleware/auth.middleware';
+import { Types } from 'mongoose';
 
 /**
  * Submit a form response
@@ -194,6 +195,31 @@ export const deleteSubmissions = async (
 export class SubmissionController {
   constructor(private readonly submissionService: SubmissionService) {}
 
+  @Post('submit/:formId')
+  async handleFormSubmit(
+    @Param('formId') formId: string,
+    @Body() data: any,
+    @Query('userAgent') userAgent: string,
+    @Query('ip') ip: string
+  ) {
+    const submission: Partial<ISubmission> = {
+      formId: new Types.ObjectId(formId),
+      data,
+      userAgent,
+      ipAddress: ip,
+      submittedAt: new Date(),
+      status: SubmissionStatus.PENDING
+    };
+
+    const result = await this.submissionService.createSubmission(submission);
+    
+    return {
+      success: true,
+      message: "Submission created successfully",
+      submissionId: result._id,
+    };
+  }
+
   @Get()
   async getSubmissionsByFormId(
     @Query('formId') formId: string,
@@ -209,7 +235,7 @@ export class SubmissionController {
   }
 
   @Post()
-  async createSubmission(@Body() submission: Partial<SubmissionDocument>): Promise<SubmissionDocument> {
+  async createSubmission(@Body() submission: Partial<ISubmission>): Promise<SubmissionDocument> {
     return this.submissionService.createSubmission(submission);
   }
 
@@ -231,5 +257,13 @@ export class SubmissionController {
     return this.submissionService.getSubmissionStats(formId);
   }
 }
+
+// Export the static methods for use in Express routes
+export const {
+  submitForm,
+  getFormSubmissions,
+  getSubmissionById,
+  deleteSubmissions
+} = new SubmissionController(new SubmissionService(null));
 
 export default SubmissionController;
