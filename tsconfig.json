@@ -1,12 +1,22 @@
 {
-  "references": [
-    { "path": "./server/tsconfig.json" },
-    { "path": "./frontend/tsconfig.json" }
-  ],
   "compilerOptions": {
-    "composite": true,
-    "typeRoots": ["./node_modules/@types", "@types"],
-    "types": ["@formio/core"]
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@deal-fuze/*": ["./*/src"]
+    }
   },
-  "include": ["@types/**/*.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
 }

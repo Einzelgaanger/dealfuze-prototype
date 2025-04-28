@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { param, body } from "express-validator";
 import submissionController from "./submission.controller";
 import { personalityService } from "../personality/personality.service";
@@ -80,7 +80,7 @@ router.delete("/submissions", submissionController.deleteSubmissions);
 router.post(
   "/submissions/:id/retry",
   submissionIdValidation,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const submission = await SubmissionModel.findById(id);

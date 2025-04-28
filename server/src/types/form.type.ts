@@ -44,4 +44,5 @@ export interface FormSettings extends FormioFormSettings {
   redirectUrl: string;
   sendEmailNotification: boolean;
   emailRecipients: string[];
+  hideTitle: boolean;
 }
