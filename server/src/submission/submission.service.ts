@@ -16,9 +16,8 @@ import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import matchService from "../match/match.service";
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
-import { Model, SchemaFactory } from 'mongoose';
 
 interface FormattedSubmission {
   id: string;
@@ -44,14 +43,11 @@ interface SubmissionVirtuals {
   // Virtual properties if any
 }
 
-const SubmissionSchemaFactory = SchemaFactory.createForClass(Submission);
-type SubmissionModelType = ReturnType<typeof SubmissionSchemaFactory>;
-
 @Injectable()
 export class SubmissionService {
   constructor(
     @InjectModel(Submission.name) 
-    private readonly submissionModel: SubmissionModelType
+    private readonly submissionModel: any
   ) {}
 
   async createSubmission(

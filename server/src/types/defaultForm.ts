@@ -1,4 +1,4 @@
-import { Country } from "country-state-city";
+import { Country, ICountry } from "country-state-city";
 
 const DEFAULT_INDUSTRIES = [
   "AI",
@@ -19,6 +19,14 @@ const DEFAULT_INDUSTRIES = [
   "Media and Entertainment",
   "Other",
 ];
+
+// Function to handle countries 
+const handleCountryTransform = (country: ICountry) => {
+  return {
+    value: country.isoCode,
+    label: country.name
+  };
+};
 
 export const defaultFounderForm = {
   display: "form",
@@ -315,9 +323,9 @@ export const defaultFounderForm = {
       multiple: false,
       dataSrc: "values",
       data: {
-        values: Country.getAllCountries().map((country) => ({
-          label: country.name,
+        values: Country.getAllCountries().map((country: ICountry) => ({
           value: country.isoCode,
+          label: country.name,
         })),
         resource: "",
         url: "",
@@ -898,9 +906,9 @@ export const defaultInvestorForm = {
       multiple: false,
       dataSrc: "values",
       data: {
-        values: Country.getAllCountries().map((country) => ({
-          label: country.name,
+        values: Country.getAllCountries().map((country: ICountry) => ({
           value: country.isoCode,
+          label: country.name,
         })),
         resource: "",
         url: "",

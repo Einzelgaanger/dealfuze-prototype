@@ -11,7 +11,7 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
     .object({
       ...(includeFormId
         ? {
-            formId: z.string().refine((val) => {
+            formId: z.string().refine((val: string) => {
               if (!val) {
                 return false;
               }
@@ -26,7 +26,7 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
           fieldSchema = z
             .string()
             .url("Invalid LinkedIn URL")
-            .refine((val) => {
+            .refine((val: string) => {
               const linkedinRegex =
                 /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+$/;
               return linkedinRegex.test(val);
@@ -50,8 +50,8 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
 
             fieldSchema = z
               .union([
-                z.string().transform((val) => {
-                  const num = Number(val);
+                z.string().transform((val: string) => {
+                  const num: number = Number(val);
                   if (isNaN(num)) {
                     return undefined;
                   }
@@ -67,7 +67,7 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
                   }
                   return num;
                 }),
-                z.number().refine((num) => {
+                z.number().refine((num: number) => {
                   if (numberValidate?.min !== undefined) {
                     if (num < numberValidate.min) {
                       return false;
@@ -89,7 +89,7 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
             fieldSchema = z
               .string()
               .refine(
-                (val) =>
+                (val: string) =>
                   !val ||
                   getComponentOptions(component).some(
                     (opt) => opt.value === val
@@ -102,7 +102,7 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
             fieldSchema = z.union([
               z
                 .string()
-                .refine((val) => {
+                .refine((val: string) => {
                   if (component.validate?.required && !val.length) {
                     return false;
                   }
@@ -111,13 +111,13 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
                     val.includes(opt.value)
                   );
                 })
-                .transform((val) => {
+                .transform((val: string) => {
                   if (val.length === 0) {
                     return undefined;
                   }
                   return [val];
                 }),
-              z.array(z.string()).refine((val) => {
+              z.array(z.string()).refine((val: string[]) => {
                 if (component.validate?.required && !val.length) {
                   return false;
                 }
@@ -151,7 +151,7 @@ export function createFormSchema(form: FormDocument, includeFormId = true) {
         };
       }, {} as Record<string, z.ZodType<any>>),
     })
-    .refine((data) => {
+    .refine((data: any) => {
       console.log("data", data);
       return true;
     }, "This field is required");
