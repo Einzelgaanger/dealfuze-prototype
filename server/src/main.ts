@@ -11,11 +11,13 @@ import { AppConfig } from "./config";
 import { errorHandler } from "./middleware/error.middleware";
 import { brightDataCron } from "./cron/brightData";
 import cron from "node-cron";
+import path from "path";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.API_PORT || 4000;
+const PORT = process.env.PORT || 4000;
+const isProduction = process.env.NODE_ENV === "production";
 
 connectToDatabase().catch((err) => {
   console.error("Failed to connect to MongoDB:", err);
@@ -36,18 +38,31 @@ app.use(
         body: res.body,
       }),
     },
-  }),
-  cors({
-    origin: [AppConfig.CORS_ORIGIN!, "100.27.150.189", "18.214.10.85"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
   })
 );
 
+// Configure CORS based on environment
+const corsOptions = {
+  origin: isProduction 
+    ? ["https://dealfuzealgorithmtrial.onrender.com"]
+    : [AppConfig.CORS_ORIGIN!, "http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+// Serve static files in production
+if (isProduction) {
+  app.use(express.static(path.join(__dirname, "../../frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
+  });
+}
 
 app.use((req, _res, next) => {
   console.log("Incoming request:", req.method, req.url);
