@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import "express-async-errors";
 import cors from "cors";
 import helmet from "helmet";
@@ -59,17 +59,17 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 // Serve static files in production
 if (isProduction) {
   app.use(express.static(path.join(__dirname, "../../frontend/dist")));
-  app.get("*", (req, res) => {
+  app.get("*", (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
   });
 }
 
-app.use((req, _res, next) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
   console.log("Incoming request:", req.method, req.url);
   next();
 });
 
-app.get("/healthz", (req, res) => {
+app.get("/healthz", (req: Request, res: Response) => {
   res.send("Api Running");
 });
 

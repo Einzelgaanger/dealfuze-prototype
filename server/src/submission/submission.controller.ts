@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import SubmissionModel from "../db/models/submission.schema";
 import submissionService from "./submission.service";
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { SubmissionService } from './submission.service';
+import { Submission } from './submission.schema';
+import { AuthGuard } from '../middleware/auth.middleware';
 
 /**
  * Submit a form response
@@ -184,6 +188,55 @@ export const deleteSubmissions = async (
     });
   }
 };
+
+@Controller('submissions')
+@UseGuards(AuthGuard)
+export class SubmissionController {
+  constructor(private readonly submissionService: SubmissionService) {}
+
+  @Post()
+  async create(@Body() submission: Submission): Promise<Submission> {
+    return this.submissionService.create(submission);
+  }
+
+  @Get()
+  async findAll(): Promise<Submission[]> {
+    return this.submissionService.findAll();
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<Submission> {
+    return this.submissionService.findOne(id);
+  }
+
+  @Get('type/:type')
+  async findByType(@Param('type') type: 'founder' | 'investor'): Promise<Submission[]> {
+    return this.submissionService.findByType(type);
+  }
+
+  @Get('form/:formId')
+  async findByFormId(@Param('formId') formId: string): Promise<Submission[]> {
+    return this.submissionService.findByFormId(formId);
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() submission: Partial<Submission>,
+  ): Promise<Submission> {
+    return this.submissionService.update(id, submission);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string): Promise<void> {
+    return this.submissionService.delete(id);
+  }
+
+  @Get('stats')
+  async getStats() {
+    return this.submissionService.getSubmissionStats();
+  }
+}
 
 export default {
   submitForm,

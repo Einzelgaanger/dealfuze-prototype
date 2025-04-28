@@ -8,8 +8,11 @@ export enum SubmissionStatus {
   FAILED = "failed",
 }
 
+export type SubmissionType = 'founder' | 'investor';
+
 export interface ISubmission {
   formId: ObjectId;
+  type: SubmissionType;
   data: SubmissionDataType;
   submittedAt: Date;
   ipAddress?: string;
