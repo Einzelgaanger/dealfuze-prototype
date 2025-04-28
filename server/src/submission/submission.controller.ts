@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import SubmissionModel from "../db/models/submission.schema";
 import submissionService from "./submission.service";
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { SubmissionService } from './submission.service';
 import { SubmissionDocument, SubmissionStatus } from '../types/submission.type';
 import { JwtAuthGuard } from '../middleware/auth.middleware';
@@ -194,14 +194,13 @@ export const deleteSubmissions = async (
 export class SubmissionController {
   constructor(private readonly submissionService: SubmissionService) {}
 
-  @Post()
-  async createSubmission(@Body() submission: Partial<SubmissionDocument>): Promise<SubmissionDocument> {
-    return this.submissionService.createSubmission(submission);
-  }
-
   @Get()
-  async getSubmissions(): Promise<SubmissionDocument[]> {
-    return this.submissionService.getSubmissionsByFormId('all');
+  async getSubmissionsByFormId(
+    @Query('formId') formId: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string
+  ) {
+    return this.submissionService.getFormSubmissions(formId, page, limit);
   }
 
   @Get(':id')
@@ -209,17 +208,12 @@ export class SubmissionController {
     return this.submissionService.getSubmissionById(id);
   }
 
-  @Get('type/:type')
-  async getSubmissionsByType(@Param('type') type: 'founder' | 'investor'): Promise<SubmissionDocument[]> {
-    return this.submissionService.getSubmissionsByFormId(type);
+  @Post()
+  async createSubmission(@Body() submission: Partial<SubmissionDocument>): Promise<SubmissionDocument> {
+    return this.submissionService.createSubmission(submission);
   }
 
-  @Get('form/:formId')
-  async getSubmissionsByFormId(@Param('formId') formId: string): Promise<SubmissionDocument[]> {
-    return this.submissionService.getSubmissionsByFormId(formId);
-  }
-
-  @Put(':id/status')
+  @Post(':id/status')
   async updateStatus(
     @Param('id') id: string,
     @Body('status') status: SubmissionStatus
@@ -227,7 +221,7 @@ export class SubmissionController {
     return this.submissionService.updateStatus(id, status);
   }
 
-  @Delete()
+  @Post('delete')
   async deleteSubmissions(@Body('submissionIds') submissionIds: string[]): Promise<void> {
     return this.submissionService.deleteSubmissions(submissionIds);
   }
@@ -238,9 +232,4 @@ export class SubmissionController {
   }
 }
 
-export default {
-  submitForm,
-  getFormSubmissions,
-  getSubmissionById,
-  deleteSubmissions,
-};
+export default SubmissionController;

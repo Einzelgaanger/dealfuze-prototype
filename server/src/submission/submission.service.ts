@@ -19,12 +19,12 @@ import matchService from "../match/match.service";
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Submission, SubmissionDocument as SubmissionSchemaDocument } from './submission.schema';
+import { Submission } from './submission.schema';
 
 @Injectable()
 export class SubmissionService {
   constructor(
-    @InjectModel('Submission')
+    @InjectModel(Submission.name)
     private readonly submissionModel: Model<SubmissionDocument>,
   ) {}
 
@@ -120,54 +120,4 @@ export class SubmissionService {
   }
 }
 
-async function getFormSubmissions(
-  formId: string,
-  pageQuery: string,
-  limitQuery: string
-) {
-  const form = await FormModel.findById(formId);
-  if (!form) {
-    return null;
-  }
-
-  const page = parseInt(pageQuery) || 1;
-  const limit = parseInt(limitQuery) || 20;
-  const skip = (page - 1) * limit;
-
-  const total = await SubmissionModel.countDocuments({ formId });
-  const submissions = await SubmissionModel.find({ formId })
-    .sort({ submittedAt: -1 })
-    .skip(skip)
-    .limit(limit);
-
-  const formattedSubmissions = submissions.map((sub: SubmissionSchemaDocument) => {
-    const dataObj: Record<string, any> = {};
-
-    sub.data.forEach((value: any, key: any) => {
-      dataObj[key] = value;
-    });
-
-    return {
-      id: sub._id,
-      formId: sub.formId,
-      data: dataObj,
-      submittedAt: sub.submittedAt,
-      ipAddress: sub.ipAddress,
-      userAgent: sub.userAgent,
-      name: sub.name,
-      email: sub.email,
-      status: sub.status,
-    };
-  });
-
-  return {
-    submissions: formattedSubmissions,
-    total,
-    page,
-    limit,
-  };
-}
-
-async function deleteSubmissions(submissionIds: string[]) {
-  await SubmissionModel.deleteMany({ _id: { $in: submissionIds } });
-}
+export default SubmissionService;

@@ -1,5 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
-import { Express } from 'express';
+import { Express, Request, Response, NextFunction, Router } from 'express';
 
 declare global {
   namespace Express {
@@ -23,6 +22,14 @@ declare module 'express-serve-static-core' {
     put(path: string, ...handlers: any[]): this;
     delete(path: string, ...handlers: any[]): this;
   }
+
+  interface Application {
+    use: any;
+    listen: any;
+    static: any;
+    json: any;
+    urlencoded: any;
+  }
 }
 
-export { Request, Response, NextFunction }; 
+export { Express, Request, Response, NextFunction, Router }; 
