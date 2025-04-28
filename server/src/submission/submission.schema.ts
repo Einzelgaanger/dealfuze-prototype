@@ -2,18 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { SubmissionStatus, SubmissionDataType } from '../types/submission.type';
 
-export type SubmissionDocument = Document & {
-  formId: Types.ObjectId;
-  type: 'founder' | 'investor';
-  data: SubmissionDataType;
-  submittedAt: Date;
-  ipAddress?: string;
-  userAgent?: string;
-  name: string;
-  email: string;
-  linkedInProfileId?: Types.ObjectId;
-  status: SubmissionStatus;
-};
+export type SubmissionDocument = Submission & Document;
 
 @Schema({ timestamps: true })
 export class Submission {
