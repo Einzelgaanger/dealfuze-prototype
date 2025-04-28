@@ -11,6 +11,53 @@ This document provides a comprehensive overview of the matching algorithm implem
 - **Testing**: Jest (unit tests) and Supertest (integration tests)
 - **Deployment**: Docker containerization
 
+## Build and Deployment
+
+### Prerequisites
+- Node.js (v22.14.0 or higher)
+- MongoDB
+- Docker (optional)
+
+### Installation
+```bash
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Start the development server
+npm run dev
+
+# Start the production server
+npm start
+```
+
+### Environment Variables
+Create a `.env` file in the root directory with the following variables:
+```env
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+PORT=4000
+NODE_ENV=development
+```
+
+### Docker Deployment
+```bash
+# Build the Docker image
+docker build -t dealfuze-algorithm .
+
+# Run the container
+docker run -p 4000:4000 dealfuze-algorithm
+```
+
+### Render Deployment
+1. Connect your GitHub repository to Render
+2. Configure the following settings:
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+   - Environment Variables: Add all required variables from `.env`
+
 ## System Architecture
 
 ### Core Components
@@ -106,8 +153,9 @@ POST /api/submissions - Create new submission
 GET /api/submissions - Get all submissions
 GET /api/submissions/:id - Get specific submission
 GET /api/submissions/type/:type - Get submissions by type
-PUT /api/submissions/:id - Update submission
-DELETE /api/submissions/:id - Delete submission
+PUT /api/submissions/:id/status - Update submission status
+DELETE /api/submissions - Delete submissions
+GET /api/submissions/stats/:formId - Get submission statistics
 ```
 
 ### Match Endpoints
@@ -185,18 +233,6 @@ app.use(errorHandler);
 - API endpoint testing
 - End-to-end flow testing
 - Database integration testing
-
-## Deployment
-
-### Docker Configuration
-```dockerfile
-# Dockerfile configuration for containerization
-```
-
-### Environment Variables
-- Database connection strings
-- API keys and secrets
-- Feature flags
 
 ## Monitoring and Logging
 

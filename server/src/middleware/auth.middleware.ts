@@ -1,6 +1,8 @@
 import { getAuth, clerkMiddleware } from "@clerk/express";
 import { Request, Response, NextFunction } from "express";
 import { AppConfig } from "../config";
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Observable } from 'rxjs';
 
 export const authMiddleware = (
   req: Request,
@@ -23,3 +25,18 @@ export const authMiddleware = (
     next();
   });
 };
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    const request = context.switchToHttp().getRequest();
+    return this.validateRequest(request);
+  }
+
+  private validateRequest(request: any): boolean {
+    // TODO: Implement JWT validation logic
+    return true; // Temporarily allowing all requests
+  }
+}

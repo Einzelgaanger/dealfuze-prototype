@@ -4,8 +4,8 @@ import SubmissionModel from "../db/models/submission.schema";
 import submissionService from "./submission.service";
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { SubmissionService } from './submission.service';
-import { Submission } from './submission.schema';
-import { AuthGuard } from '../middleware/auth.middleware';
+import { SubmissionDocument, SubmissionStatus } from '../types/submission.type';
+import { JwtAuthGuard } from '../middleware/auth.middleware';
 
 /**
  * Submit a form response
@@ -190,51 +190,51 @@ export const deleteSubmissions = async (
 };
 
 @Controller('submissions')
-@UseGuards(AuthGuard)
+@UseGuards(JwtAuthGuard)
 export class SubmissionController {
   constructor(private readonly submissionService: SubmissionService) {}
 
   @Post()
-  async create(@Body() submission: Submission): Promise<Submission> {
-    return this.submissionService.create(submission);
+  async createSubmission(@Body() submission: Partial<SubmissionDocument>): Promise<SubmissionDocument> {
+    return this.submissionService.createSubmission(submission);
   }
 
   @Get()
-  async findAll(): Promise<Submission[]> {
-    return this.submissionService.findAll();
+  async getSubmissions(): Promise<SubmissionDocument[]> {
+    return this.submissionService.getSubmissionsByFormId('all');
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<Submission> {
-    return this.submissionService.findOne(id);
+  async getSubmissionById(@Param('id') id: string): Promise<SubmissionDocument | null> {
+    return this.submissionService.getSubmissionById(id);
   }
 
   @Get('type/:type')
-  async findByType(@Param('type') type: 'founder' | 'investor'): Promise<Submission[]> {
-    return this.submissionService.findByType(type);
+  async getSubmissionsByType(@Param('type') type: 'founder' | 'investor'): Promise<SubmissionDocument[]> {
+    return this.submissionService.getSubmissionsByFormId(type);
   }
 
   @Get('form/:formId')
-  async findByFormId(@Param('formId') formId: string): Promise<Submission[]> {
-    return this.submissionService.findByFormId(formId);
+  async getSubmissionsByFormId(@Param('formId') formId: string): Promise<SubmissionDocument[]> {
+    return this.submissionService.getSubmissionsByFormId(formId);
   }
 
-  @Put(':id')
-  async update(
+  @Put(':id/status')
+  async updateStatus(
     @Param('id') id: string,
-    @Body() submission: Partial<Submission>,
-  ): Promise<Submission> {
-    return this.submissionService.update(id, submission);
+    @Body('status') status: SubmissionStatus
+  ): Promise<SubmissionDocument | null> {
+    return this.submissionService.updateStatus(id, status);
   }
 
-  @Delete(':id')
-  async delete(@Param('id') id: string): Promise<void> {
-    return this.submissionService.delete(id);
+  @Delete()
+  async deleteSubmissions(@Body('submissionIds') submissionIds: string[]): Promise<void> {
+    return this.submissionService.deleteSubmissions(submissionIds);
   }
 
-  @Get('stats')
-  async getStats() {
-    return this.submissionService.getSubmissionStats();
+  @Get('stats/:formId')
+  async getSubmissionStats(@Param('formId') formId: string) {
+    return this.submissionService.getSubmissionStats(formId);
   }
 }
 

@@ -18,7 +18,7 @@ import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import matchService from "../match/match.service";
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Document, Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Submission, SubmissionDocument as SubmissionSchemaDocument } from './submission.schema';
 
 @Injectable()
@@ -92,7 +92,7 @@ export class SubmissionService {
     ).exec();
   }
 
-  async deleteSubmissions(submissionIds: string[]) {
+  async deleteSubmissions(submissionIds: string[]): Promise<void> {
     await this.submissionModel.deleteMany({ _id: { $in: submissionIds } });
   }
 
