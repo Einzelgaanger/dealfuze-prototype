@@ -1,0 +1,12 @@
+{
+  "references": [
+    { "path": "./server/tsconfig.json" },
+    { "path": "./frontend/tsconfig.json" }
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "typeRoots": ["./node_modules/@types", "@types"],
+    "types": ["@formio/core"]
+  },
+  "include": ["@types/**/*.d.ts"]
+}
