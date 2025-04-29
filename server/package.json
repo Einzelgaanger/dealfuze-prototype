@@ -6,8 +6,8 @@
   "types": "./dist/main.d.ts",
   "scripts": {
     "dev": "nodemon -w . -x tsx src/main.ts | pino-pretty",
-    "start": "node dist/main.js",
-    "build": "tsc",
+    "start": "node -r tsconfig-paths/register dist/main.js",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },
@@ -34,7 +34,8 @@
     "pino-http": "^8.3.1",
     "pino-pretty": "^10.3.1",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/cache-manager": "^4.0.6",

@@ -1,24 +1,45 @@
 declare module 'country-state-city' {
   export interface ICountry {
-    id: string;
     name: string;
+    isoCode: string;
     phonecode: string;
-    sortname: string;
+    flag: string;
+    currency: string;
+    latitude: string;
+    longitude: string;
+    timezones: any[];
   }
 
   export interface IState {
-    id: string;
     name: string;
-    country_id: string;
+    isoCode: string;
+    countryCode: string;
+    latitude: string;
+    longitude: string;
   }
 
   export interface ICity {
-    id: string;
     name: string;
-    state_id: string;
+    countryCode: string;
+    stateCode: string;
+    latitude: string;
+    longitude: string;
   }
 
-  export function getAllCountries(): ICountry[];
-  export function getStatesOfCountry(countryId: string): IState[];
-  export function getCitiesOfState(stateId: string): ICity[];
+  export const Country: {
+    getAllCountries(): ICountry[];
+    getCountryByCode(code: string): ICountry;
+  };
+
+  export const State: {
+    getAllStates(): IState[];
+    getStatesOfCountry(countryCode: string): IState[];
+    getStateByCodeAndCountry(stateCode: string, countryCode: string): IState;
+  };
+
+  export const City: {
+    getAllCities(): ICity[];
+    getCitiesOfState(countryCode: string, stateCode: string): ICity[];
+    getCitiesOfCountry(countryCode: string): ICity[];
+  };
 } 

@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=frontend\"",
+    "prebuild": "chmod +x ./build.sh && ./build.sh",
     "build": "npm run build --workspace=server && npm run build --workspace=frontend",
     "start": "npm run start --workspace=server",
     "typecheck": "concurrently \"npm run typecheck --workspace=server\" \"npm run typecheck --workspace=frontend\""
@@ -51,6 +52,7 @@
     "pino-http": "^10.4.0",
     "rxjs": "^7.8.2",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3",
     "zod": "^3.24.3"
   }
