@@ -30,13 +30,12 @@ interface FormattedSubmission {
   type: SubmissionType;
   data: SubmissionDataType;
   submittedAt: Date;
-  ipAddress?: string;
-  userAgent?: string;
-  name?: string;
-  email?: string;
+  ipAddress: string;
+  userAgent: string;
+  name: string;
+  email: string;
+  linkedInProfileId: string;
   status: SubmissionStatus;
-  isDeleted: boolean;
-  matchScore: number;
 }
 
 interface SubmissionQueryHelpers {
@@ -54,34 +53,73 @@ interface SubmissionVirtuals {
 @Injectable()
 export class SubmissionService {
   constructor(
-    @InjectModel(Submission.name) 
+    @InjectModel(SubmissionModel.name) 
     private submissionModel: Model<SubmissionDocument>,
     private matchService: MatchService
   ) {}
 
+  async createSubmission(data: SubmissionDataType): Promise<SubmissionDocument> {
+    const submission = new this.submissionModel(data);
+    return submission.save();
+  }
+
+  async findAll(): Promise<SubmissionDocument[]> {
+    return this.submissionModel.find().exec();
+  }
+
+  async findById(id: string): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findById(id).exec();
+  }
+
+  async findByFormId(formId: string): Promise<SubmissionDocument[]> {
+    return this.submissionModel.find({ formId }).exec();
+  }
+
+  async update(id: string, data: Partial<ISubmission>): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(id, data, { new: true }).exec();
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.submissionModel.findByIdAndDelete(id).exec();
+    return !!result;
+  }
+
+  async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    ).exec();
+  }
+
+  async formatSubmission(submission: SubmissionDocument): Promise<FormattedSubmission> {
+    return {
+      id: submission._id.toString(),
+      formId: submission.formId,
+      type: submission.type,
+      data: submission.data,
+      submittedAt: submission.submittedAt,
+      ipAddress: submission.ipAddress,
+      userAgent: submission.userAgent,
+      name: submission.name,
+      email: submission.email,
+      linkedInProfileId: submission.linkedInProfileId,
+      status: submission.status
+    };
+  }
+
+  async getSubmissionsByFormId(formId: string): Promise<FormattedSubmission[]> {
+    const submissions = await this.submissionModel
+      .find({ formId })
+      .sort({ submittedAt: -1 })
+      .exec();
+
+    return Promise.all(submissions.map(sub => this.formatSubmission(sub)));
+  }
+
   async create(submission: Partial<Submission>): Promise<SubmissionDocument> {
     const createdSubmission = new this.submissionModel(submission);
     return createdSubmission.save();
-  }
-
-  async update(id: string, submission: Partial<Submission>): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findByIdAndUpdate(
-      id,
-      { ...submission, lastUpdated: new Date() },
-      { new: true }
-    ).exec();
-  }
-
-  async softDelete(id: string): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findByIdAndUpdate(
-      id,
-      { 
-        isDeleted: true,
-        deletedAt: new Date(),
-        status: SubmissionStatus.DELETED
-      },
-      { new: true }
-    ).exec();
   }
 
   async updateCharacterTraits(
@@ -128,15 +166,6 @@ export class SubmissionService {
       },
       { new: true }
     ).exec();
-  }
-
-  async findAll(includeDeleted = false): Promise<SubmissionDocument[]> {
-    const query = includeDeleted ? {} : { isDeleted: false };
-    return this.submissionModel.find(query).sort({ matchScore: -1 }).exec();
-  }
-
-  async findById(id: string): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findById(id).exec();
   }
 
   async findByType(type: string): Promise<SubmissionDocument[]> {
@@ -299,17 +328,6 @@ export class SubmissionService {
       page,
       limit
     };
-  }
-
-  /**
-   * Update submission status with optimized write operation
-   */
-  async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(id) },
-      { $set: { status } },
-      { new: true }
-    ).exec();
   }
 
   /**
