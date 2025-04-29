@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=frontend\"",
-    "prebuild": "chmod +x ./build.sh && ./build.sh && node fixbuild.js",
+    "prebuild": "powershell -ExecutionPolicy Bypass -File ./build.ps1",
     "build": "npm run build --workspace=server && npm run build --workspace=frontend",
     "start": "npm run start --workspace=server",
     "typecheck": "concurrently \"npm run typecheck --workspace=server\" \"npm run typecheck --workspace=frontend\""
@@ -21,11 +21,11 @@
     "concurrently": "^8.2.2",
     "country-state-city": "^3.2.1",
     "mongodb": "^6.16.0",
-    "mongoose": "^8.14.0"
+    "mongoose": "^8.13.3"
   },
   "devDependencies": {
     "@clerk/express": "^1.4.9",
-    "@formio/core": "^2.4.0",
+    "@formio/core": "^2.3.2",
     "@nestjs/common": "^11.1.0",
     "@nestjs/config": "^4.0.2",
     "@nestjs/mongoose": "^11.0.3",
@@ -46,7 +46,7 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "node-cron": "^3.0.3",
-    "openai": "^4.96.0",
+    "openai": "^4.96.1",
     "path": "^0.12.7",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",

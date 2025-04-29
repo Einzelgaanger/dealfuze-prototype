@@ -1,4 +1,5 @@
-import { Document, Model, Types } from 'mongoose';
+﻿import { Document, Model, Types } from 'mongoose';
+import { DeleteResult, UpdateResult } from 'mongodb';
 
 // Add missing methods that TypeScript doesn't recognize
 export interface ExtendedQuery<ResultType, DocType extends Document> {
@@ -14,14 +15,6 @@ export interface ExtendedAggregate<ResultType = any[]> {
   exec(): Promise<ResultType>;
 }
 
-export interface ExtendedDeleteResult {
-  deletedCount?: number;
-}
-
-export interface ExtendedUpdateResult {
-  nModified: number;
-}
-
 // Custom extension helper for models
 export interface ExtendedModel<T extends Document> {
   aggregate(pipeline: any[]): ExtendedAggregate;
@@ -30,8 +23,8 @@ export interface ExtendedModel<T extends Document> {
   findById(id: string | Types.ObjectId): ExtendedQuery<T | null, T>;
   findOne(conditions: any): ExtendedQuery<T | null, T>;
   find(conditions?: any): ExtendedQuery<T[], T>;
-  deleteMany(conditions: any): ExtendedQuery<ExtendedDeleteResult, T>;
+  deleteMany(conditions: any): ExtendedQuery<DeleteResult, T>;
   findByIdAndUpdate(id: string | Types.ObjectId, update: any, options?: any): ExtendedQuery<T | null, T>;
-  updateMany(conditions: any, update: any, options?: any): ExtendedQuery<ExtendedUpdateResult, T>;
+  updateMany(conditions: any, update: any, options?: any): ExtendedQuery<UpdateResult, T>;
   countDocuments(conditions: any): ExtendedQuery<number, T>;
-} 
+}

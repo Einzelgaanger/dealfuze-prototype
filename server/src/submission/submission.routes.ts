@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { param, body } from "express-validator";
-import submissionController from "./submission.controller";
-import { personalityService } from "../personality/personality.service";
+import { SubmissionController } from "./submission.controller";
+import { PersonalityService } from "../personality/personality.service";
 import SubmissionModel from "../db/models/submission.schema";
 import LinkedinProfileModel from "../db/models/linkedinProfile.schema";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
@@ -12,7 +12,6 @@ import MatchCriteriaModel from "../db/models/matchCriteria.schema";
 import PipelineModel from "../db/models/pipeline.schema";
 import PersonalityModel from "../db/models/personality.schema";
 import { Router } from 'express';
-import { SubmissionController } from './submission.controller';
 import { SubmissionService } from './submission.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Submission } from './submission.schema';
@@ -22,7 +21,31 @@ const router = Router();
 
 // Get the model through NestJS's dependency injection
 const submissionModel = getModelToken(Submission.name);
-const submissionService = new SubmissionService(submissionModel as Model<Submission>);
+const matchModel = getModelToken('Match') as unknown as Model<any>;
+const personalityModel = getModelToken('Personality') as unknown as Model<any>;
+
+// Initialize services in the correct order
+const matchService = new MatchService(
+  matchModel,
+  new SubmissionService(
+    submissionModel as unknown as Model<Submission>,
+    null as any,
+    null as any
+  )
+);
+
+const personalityService = new PersonalityService(
+  personalityModel,
+  submissionModel as unknown as Model<Submission>,
+  matchService
+);
+
+const submissionService = new SubmissionService(
+  submissionModel as unknown as Model<Submission>,
+  matchService,
+  personalityService
+);
+
 const controller = new SubmissionController(submissionService);
 
 const formIdValidation = [
@@ -51,7 +74,12 @@ router.post(
   "/forms/:formId/submit",
   formIdValidation,
   submissionValidation,
-  submissionController.submitForm
+  (req: Request, res: Response) => controller.handleFormSubmit(
+    req.params.formId,
+    req.body,
+    req.headers['user-agent'] as string,
+    req.ip
+  )
 );
 
 /**
@@ -62,7 +90,11 @@ router.post(
 router.get(
   "/forms/:formId/submissions",
   formIdValidation,
-  submissionController.getFormSubmissions
+  (req: Request, res: Response) => controller.getSubmissionsByFormId(
+    req.params.formId,
+    req.query.page as string,
+    req.query.limit as string
+  )
 );
 
 /**
@@ -73,7 +105,7 @@ router.get(
 router.get(
   "/submissions/:id",
   submissionIdValidation,
-  submissionController.getSubmissionById
+  (req: Request, res: Response) => controller.getSubmissionById(req.params.id)
 );
 
 /**
@@ -81,7 +113,9 @@ router.get(
  * @desc    Delete multiple submissions by ID
  * @access  Public
  */
-router.delete("/submissions", submissionController.deleteSubmissions);
+router.delete("/submissions", (req: Request, res: Response) => 
+  controller.deleteSubmissions(req.body.submissionIds)
+);
 
 /**
  * @route   POST /api/submissions/:id/retry
@@ -167,7 +201,12 @@ router.post(
     }
 
     if (submission.status === SubmissionStatus.FAILED) {
-      await MatchService.matchSubmission(form, submission, matchCriteria);
+      await matchService.batchProcessMatches(
+        form._id.toString(),
+        [submission._id.toString()],
+        [0],
+        [{}]
+      );
     }
 
     return res.status(200).json({

@@ -5,7 +5,7 @@ import { OpenAI } from 'openai';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
-import { Submission as SubmissionModel } from '../submission/submission.schema';
+import { Submission, SubmissionDocument } from '../submission/submission.schema';
 import FormModel from '../db/models/form.schema';
 import LinkedinProfileModel from '../db/models/linkedinProfile.schema';
 import { FormComponent } from '../types/formComponent.type';
@@ -18,15 +18,17 @@ type ObjectId = Types.ObjectId;
 
 @Injectable()
 export class PersonalityService {
-  private readonly openai: OpenAI;
+  private openai: OpenAI;
 
   constructor(
     @InjectModel(PersonalityModel.name) 
     private personalityModel: Model<IPersonality>,
+    @InjectModel(Submission.name)
+    private submissionModel: Model<SubmissionDocument>,
     private matchService: MatchService
   ) {
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || ''
+      apiKey: process.env.OPENAI_API_KEY || '',
     });
   }
 
@@ -107,7 +109,7 @@ export class PersonalityService {
     personalityFields: FormComponent[],
     useLinkedinPersonality: boolean
   ) {
-    const submission = await SubmissionModel.findById(submissionId);
+    const submission = await this.submissionModel.findById(submissionId);
     if (!submission) {
       throw new Error('Submission not found');
     }
@@ -167,7 +169,7 @@ export class PersonalityService {
       throw new Error('LinkedIn profile not found');
     }
 
-    const submission = await SubmissionModel.findOne({
+    const submission = await this.submissionModel.findOne({
       linkedInProfileId: linkedinProfile._id
     });
 
@@ -199,8 +201,13 @@ export class PersonalityService {
         [0],
         [defaultCriteria]
       );
+
+      await this.submissionModel.findByIdAndUpdate(submission._id, {
+        $set: { status: SubmissionStatus.COMPLETED }
+      });
+
     } catch (error) {
-      console.error(error);
+      console.error('Error processing personality:', error);
       throw error;
     }
   }
@@ -211,31 +218,52 @@ export class PersonalityService {
   }
 
   async processComponent(component: any): Promise<void> {
-    try {
-      const form = await FormModel.findById(component.formId);
-      if (!form) {
-        throw new Error('Form not found');
-      }
+    if (!component.submissionId) {
+      throw new Error('Submission ID is required');
+    }
 
-      const submission = await SubmissionModel.findById(component.submissionId);
+    try {
+      const submission = await this.submissionModel.findById(component.submissionId);
       if (!submission) {
         throw new Error('Submission not found');
       }
 
-      const matchCriteria = await MatchCriteriaModel.findOne({ formId: form._id });
-      if (!matchCriteria) {
-        throw new Error('Match criteria not found');
+      const form = await FormModel.findById(submission.formId);
+      if (!form) {
+        throw new Error('Form not found');
       }
 
-      const defaultCriteria = { industry: 0, fundingStage: 0, marketSize: 0, investmentRange: 0, location: 0, personality: 0, total: 0 };
-      await this.matchService.batchProcessMatches(
-        form._id.toString(),
-        [submission._id.toString()],
-        [0],
-        [defaultCriteria]
+      await this.generatePersonality(
+        submission._id as ObjectId,
+        form.components.filter((c) => c.isPersonality),
+        false
       );
+
     } catch (error) {
       console.error('Error processing component:', error);
+      throw error;
+    }
+  }
+
+  async analyzePersonality(content: string): Promise<string | null> {
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a personality analyzer. Analyze the given text and provide insights about the person\'s personality traits.',
+          },
+          {
+            role: 'user',
+            content,
+          },
+        ],
+      });
+
+      return completion.choices[0].message.content;
+    } catch (error) {
+      console.error('Error analyzing personality:', error);
       throw error;
     }
   }
