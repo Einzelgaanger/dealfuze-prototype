@@ -48,9 +48,9 @@ interface SubmissionVirtuals {
 export class SubmissionService {
   constructor(
     @InjectModel(Submission.name)
-    private submissionModel: Model<SubmissionDocument>,
-    private matchService: MatchService,
-    private personalityService: PersonalityService
+    private readonly submissionModel: Model<SubmissionDocument>,
+    private readonly matchService: MatchService,
+    private readonly personalityService: PersonalityService
   ) {}
 
   async createSubmission(
