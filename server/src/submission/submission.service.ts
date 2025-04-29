@@ -2,6 +2,7 @@ import {
   ISubmission,
   SubmissionDataType,
   SubmissionStatus,
+  SubmissionType,
 } from "../types/submission.type";
 import FormModel from "../db/models/form.schema";
 import SubmissionModel from "../db/models/submission.schema";
@@ -14,10 +15,11 @@ import {
 } from "../personality/personality.service";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import matchService from "../match/match.service";
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
+import { Document } from 'mongoose';
 
 // Cached form lookups to reduce database queries
 const formCache = new Map<string, FormDocument | null>();
@@ -51,8 +53,122 @@ interface SubmissionVirtuals {
 export class SubmissionService {
   constructor(
     @InjectModel(Submission.name) 
-    private readonly submissionModel: any
+    private submissionModel: Model<SubmissionDocument, {}, {}, {}, SubmissionDocument & Document, {}, {}>
   ) {}
+
+  async create(submission: Partial<Submission>): Promise<SubmissionDocument> {
+    const createdSubmission = new this.submissionModel(submission);
+    return createdSubmission.save();
+  }
+
+  async update(id: string, submission: Partial<Submission>): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(
+      id,
+      { ...submission, lastUpdated: new Date() },
+      { new: true }
+    ).exec();
+  }
+
+  async softDelete(id: string): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(
+      id,
+      { 
+        isDeleted: true,
+        deletedAt: new Date(),
+        status: SubmissionStatus.DELETED
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async updateCharacterTraits(
+    id: string,
+    traits: Partial<Submission['characterTraits']>
+  ): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(
+      id,
+      { 
+        characterTraits: {
+          ...traits,
+          lastUpdated: new Date()
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async updateFamilyInfo(
+    id: string,
+    info: Partial<Submission['familyInfo']>
+  ): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(
+      id,
+      { 
+        familyInfo: {
+          ...info,
+          lastUpdated: new Date()
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async updateMatchScore(
+    id: string,
+    score: number
+  ): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findByIdAndUpdate(
+      id,
+      { 
+        matchScore: score,
+        lastMatchUpdate: new Date()
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async findAll(includeDeleted = false): Promise<SubmissionDocument[]> {
+    const query = includeDeleted ? {} : { isDeleted: false };
+    return this.submissionModel.find(query).sort({ matchScore: -1 }).exec();
+  }
+
+  async findById(id: string): Promise<SubmissionDocument | null> {
+    return this.submissionModel.findById(id).exec();
+  }
+
+  async findByType(type: SubmissionType): Promise<SubmissionDocument[]> {
+    return this.submissionModel
+      .find({ type, isDeleted: false })
+      .sort({ matchScore: -1 })
+      .exec();
+  }
+
+  async findBestMatches(
+    type: SubmissionType,
+    limit = 10
+  ): Promise<SubmissionDocument[]> {
+    return this.submissionModel
+      .find({ 
+        type,
+        isDeleted: false,
+        status: SubmissionStatus.ACTIVE
+      })
+      .sort({ matchScore: -1 })
+      .limit(limit)
+      .exec();
+  }
+
+  async cleanupDeletedSubmissions(daysToKeep = 30): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+    const result = await this.submissionModel.deleteMany({
+      isDeleted: true,
+      deletedAt: { $lt: cutoffDate }
+    }).exec();
+
+    return result.deletedCount || 0;
+  }
 
   /**
    * Create a submission with optimized database operations for high-scale usage

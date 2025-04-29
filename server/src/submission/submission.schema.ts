@@ -40,7 +40,43 @@ export class Submission {
     required: true 
   })
   status!: SubmissionStatus;
+
+  @Prop({ type: Object })
+  characterTraits?: {
+    personalityType?: string;
+    leadershipStyle?: string;
+    communicationStyle?: string;
+    decisionMaking?: string;
+    riskTolerance?: string;
+    workEthic?: string;
+    lastUpdated?: Date;
+  };
+
+  @Prop({ type: Object })
+  familyInfo?: {
+    familyBackground?: string;
+    familyInvolvement?: string;
+    familyValues?: string[];
+    lastUpdated?: Date;
+  };
+
+  @Prop({ type: Boolean, default: false })
+  isDeleted!: boolean;
+
+  @Prop({ type: Date })
+  deletedAt?: Date;
+
+  @Prop({ type: Number, default: 0 })
+  matchScore!: number;
+
+  @Prop({ type: Date })
+  lastMatchUpdate?: Date;
 }
 
 export const SubmissionSchema = SchemaFactory.createForClass(Submission);
-SubmissionSchema.index({ formId: 1, submittedAt: -1 }); 
+
+// Create indexes for efficient querying
+SubmissionSchema.index({ formId: 1, submittedAt: -1 });
+SubmissionSchema.index({ type: 1, status: 1 });
+SubmissionSchema.index({ isDeleted: 1 });
+SubmissionSchema.index({ matchScore: -1 }); 

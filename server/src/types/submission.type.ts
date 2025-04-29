@@ -2,13 +2,17 @@ import { Document, ObjectId } from "mongodb";
 
 export type SubmissionDataType = Record<string, any>;
 
-export enum SubmissionStatus {
-  PENDING = "pending",
-  COMPLETED = "completed",
-  FAILED = "failed",
+export enum SubmissionType {
+  FOUNDER = 'founder',
+  INVESTOR = 'investor'
 }
 
-export type SubmissionType = 'founder' | 'investor';
+export enum SubmissionStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  DELETED = 'deleted',
+  ARCHIVED = 'archived'
+}
 
 export interface ISubmission {
   formId: ObjectId;
@@ -21,6 +25,25 @@ export interface ISubmission {
   email: string;
   linkedInProfileId?: ObjectId;
   status: SubmissionStatus;
+  characterTraits?: {
+    personalityType?: string;
+    leadershipStyle?: string;
+    communicationStyle?: string;
+    decisionMaking?: string;
+    riskTolerance?: string;
+    workEthic?: string;
+    lastUpdated?: Date;
+  };
+  familyInfo?: {
+    familyBackground?: string;
+    familyInvolvement?: string;
+    familyValues?: string[];
+    lastUpdated?: Date;
+  };
+  isDeleted: boolean;
+  deletedAt?: Date;
+  matchScore: number;
+  lastMatchUpdate?: Date;
 }
 
 export interface CreateSubmission extends Omit<ISubmission, "submittedAt"> {}
