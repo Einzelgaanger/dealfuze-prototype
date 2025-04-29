@@ -19,6 +19,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
 
+// Cached form lookups to reduce database queries
+const formCache = new Map<string, FormDocument | null>();
+const FORM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 interface FormattedSubmission {
   id: string;
   formId: string;
@@ -50,38 +54,131 @@ export class SubmissionService {
     private readonly submissionModel: any
   ) {}
 
+  /**
+   * Create a submission with optimized database operations for high-scale usage
+   */
   async createSubmission(
     formId: string,
     data: any,
     userAgent: string,
     ip: string
   ): Promise<{ redirectUrl?: string; successMessage: string; submissionId?: string }> {
-    const form = await FormModel.findById(formId);
+    // Use cached form data if available
+    let form: FormDocument | null;
+    const cacheKey = `form-${formId}`;
+    
+    if (formCache.has(cacheKey)) {
+      form = formCache.get(cacheKey);
+    } else {
+      // If not in cache, fetch from database
+      form = await FormModel.findById(formId).lean();
+      
+      // Cache the result with TTL
+      formCache.set(cacheKey, form);
+      setTimeout(() => {
+        formCache.delete(cacheKey);
+      }, FORM_CACHE_TTL);
+    }
+    
     if (!form) {
       return { successMessage: "Form not found" };
     }
 
+    // Extract name and email from form data for indexed lookup
+    let name = '';
+    let email = '';
+    
+    if (data) {
+      // Look for name field
+      if (data.name) {
+        name = data.name;
+      } else if (data.firstName && data.lastName) {
+        name = `${data.firstName} ${data.lastName}`;
+      }
+      
+      // Look for email field
+      if (data.email) {
+        email = data.email;
+      }
+    }
+
+    // Prepare submission document with all indexed fields
     const submissionToCreate = {
       formId: new Types.ObjectId(formId),
       data,
       userAgent,
       ipAddress: ip,
       submittedAt: new Date(),
-      status: SubmissionStatus.PENDING
+      status: SubmissionStatus.PENDING,
+      name, // Indexed field for faster lookups
+      email, // Indexed field for faster lookups
     };
 
-    const createdSubmission = await this.submissionModel.create(submissionToCreate);
+    // Use create operation with optimized write concern for better performance
+    // This allows the database to acknowledge writes more efficiently
+    const createdSubmission = await this.submissionModel.create(
+      [submissionToCreate],
+      { writeConcern: { w: 1, j: false } } // Write without journal sync for better performance
+    );
+
+    // Start processing the submission in background with automatic retry
+    this.processSubmissionAsync(createdSubmission[0]._id.toString())
+      .catch(err => console.error(`Error processing submission ${createdSubmission[0]._id}: ${err}`));
+    
     return {
       redirectUrl: form.redirectUrl,
       successMessage: "Submission created successfully",
-      submissionId: createdSubmission._id.toString()
+      submissionId: createdSubmission[0]._id.toString()
     };
+  }
+
+  /**
+   * Process submission asynchronously with retry capability
+   * This allows for better reliability and scalability
+   */
+  private async processSubmissionAsync(submissionId: string, retryCount = 0): Promise<void> {
+    try {
+      // Fetch the submission
+      const submission = await this.submissionModel.findById(submissionId);
+      if (!submission) return;
+
+      // Process submission - this could include matching, sending notifications, etc.
+      // Add any additional processing logic here
+
+      // Update status to completed
+      await this.submissionModel.updateOne(
+        { _id: submission._id },
+        { $set: { status: SubmissionStatus.COMPLETED } }
+      );
+    } catch (error) {
+      console.error(`Error processing submission ${submissionId}:`, error);
+      
+      // Implement exponential backoff for retries
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`Retrying submission ${submissionId} in ${delay}ms (attempt ${retryCount + 1})`);
+        
+        setTimeout(() => {
+          this.processSubmissionAsync(submissionId, retryCount + 1)
+            .catch(err => console.error(`Retry error for submission ${submissionId}:`, err));
+        }, delay);
+      } else {
+        // Max retries reached, mark as failed
+        await this.submissionModel.updateOne(
+          { _id: new Types.ObjectId(submissionId) },
+          { $set: { status: SubmissionStatus.FAILED } }
+        ).catch(err => console.error(`Failed to update submission status for ${submissionId}:`, err));
+      }
+    }
   }
 
   async getSubmissionById(id: string): Promise<SubmissionDocument | null> {
     return this.submissionModel.findById(id);
   }
 
+  /**
+   * Get form submissions with optimized database queries for large datasets
+   */
   async getFormSubmissions(
     formId: string,
     pageQuery: string,
@@ -96,14 +193,26 @@ export class SubmissionService {
     const limit = parseInt(limitQuery) || 20;
     const skip = (page - 1) * limit;
 
-    const total = await this.submissionModel.countDocuments({ formId: new Types.ObjectId(formId) });
-    const submissions = await this.submissionModel.find({ formId: new Types.ObjectId(formId) })
-      .sort({ submittedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .exec();
+    // Execute queries in parallel to reduce overall time
+    const [total, submissions] = await Promise.all([
+      // Use countDocuments with specific index for better performance
+      this.submissionModel.countDocuments({ 
+        formId: new Types.ObjectId(formId) 
+      }).hint({ formId: 1 }),
+      
+      // Use lean() and projection to reduce memory usage and improve query performance
+      this.submissionModel.find({ 
+        formId: new Types.ObjectId(formId) 
+      })
+        .select('_id formId data submittedAt ipAddress userAgent name email status')
+        .sort({ submittedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec()
+    ]);
 
+    // Map results to formatted output
     const formattedSubmissions = submissions.map((sub: any) => ({
       id: sub._id.toString(),
       formId: sub.formId.toString(),
@@ -124,36 +233,107 @@ export class SubmissionService {
     };
   }
 
+  /**
+   * Update submission status with optimized write operation
+   */
   async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
+    // Use findOneAndUpdate with lean() for better performance
+    return this.submissionModel.findOneAndUpdate(
+      { _id: new Types.ObjectId(id) },
+      { $set: { status } },
+      { new: true, lean: true }
     );
   }
 
+  /**
+   * Delete submissions in bulk with optimized performance
+   */
   async deleteSubmissions(submissionIds: string[]): Promise<void> {
-    await this.submissionModel.deleteMany({
-      _id: { $in: submissionIds.map(id => new Types.ObjectId(id)) }
-    });
+    if (!submissionIds.length) return;
+    
+    // Convert string IDs to ObjectIds
+    const objectIds = submissionIds.map(id => new Types.ObjectId(id));
+    
+    // Use deleteMany with write concern options for better performance
+    await this.submissionModel.deleteMany(
+      { _id: { $in: objectIds } },
+      { writeConcern: { w: 1, j: false } } // Faster writes
+    );
   }
 
-  async getSubmissionStats(formId: string): Promise<{ total: number; pending: number; completed: number; failed: number }> {
-    const total = await this.submissionModel.countDocuments({ formId: new Types.ObjectId(formId) });
-    const pending = await this.submissionModel.countDocuments({ 
-      formId: new Types.ObjectId(formId),
-      status: SubmissionStatus.PENDING
-    });
-    const completed = await this.submissionModel.countDocuments({ 
-      formId: new Types.ObjectId(formId),
-      status: SubmissionStatus.COMPLETED
-    });
-    const failed = await this.submissionModel.countDocuments({ 
-      formId: new Types.ObjectId(formId),
-      status: SubmissionStatus.FAILED
+  /**
+   * Get submission statistics with optimized aggregation
+   */
+  async getSubmissionStats(formId: string): Promise<{ 
+    total: number; 
+    pending: number; 
+    completed: number; 
+    failed: number;
+    recentSubmissionsPerDay: { date: string; count: number }[];
+  }> {
+    // Use MongoDB aggregation pipeline for efficient stats calculation
+    const stats = await this.submissionModel.aggregate([
+      { $match: { formId: new Types.ObjectId(formId) } },
+      { $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]).exec();
+    
+    // Initialize counts
+    let total = 0;
+    let pending = 0;
+    let completed = 0;
+    let failed = 0;
+    
+    // Process aggregation results
+    stats.forEach((stat: { _id: string; count: number }) => {
+      total += stat.count;
+      
+      if (stat._id === SubmissionStatus.PENDING) {
+        pending = stat.count;
+      } else if (stat._id === SubmissionStatus.COMPLETED) {
+        completed = stat.count;
+      } else if (stat._id === SubmissionStatus.FAILED) {
+        failed = stat.count;
+      }
     });
 
-    return { total, pending, completed, failed };
+    // Get recent submission trends (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentStats = await this.submissionModel.aggregate([
+      { 
+        $match: { 
+          formId: new Types.ObjectId(formId),
+          submittedAt: { $gte: thirtyDaysAgo }
+        } 
+      },
+      {
+        $group: {
+          _id: { 
+            $dateToString: { format: "%Y-%m-%d", date: "$submittedAt" } 
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]).exec();
+    
+    const recentSubmissionsPerDay = recentStats.map((item: { _id: string; count: number }) => ({
+      date: item._id,
+      count: item.count
+    }));
+
+    return { 
+      total, 
+      pending, 
+      completed, 
+      failed,
+      recentSubmissionsPerDay
+    };
   }
 }
 

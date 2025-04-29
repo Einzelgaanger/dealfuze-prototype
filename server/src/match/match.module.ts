@@ -1,19 +1,18 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Match, MatchSchema } from './match.schema';
 import { MatchService } from './match.service';
 import { MatchController } from './match.controller';
-import { Match, MatchSchema } from './match.schema';
-import { Submission, SubmissionSchema } from '../submission/submission.schema';
+import { MatchCalculationService } from './match-calculation.service';
+import { SubmissionModule } from '../submission/submission.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Match.name, schema: MatchSchema },
-      { name: Submission.name, schema: SubmissionSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Match.name, schema: MatchSchema }]),
+    SubmissionModule
   ],
   controllers: [MatchController],
-  providers: [MatchService],
-  exports: [MatchService],
+  providers: [MatchService, MatchCalculationService],
+  exports: [MatchService, MatchCalculationService]
 })
 export class MatchModule {} 

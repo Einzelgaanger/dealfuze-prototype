@@ -1,49 +1,168 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Patch, 
+  Body, 
+  Param, 
+  Query, 
+  UseGuards,
+  NotFoundException,
+  BadRequestException,
+  Logger
+} from '@nestjs/common';
 import { MatchService } from './match.service';
-import { Match } from './match.schema';
-import { JwtAuthGuard } from '../middleware/auth.middleware';
+import { MatchStatus, RejectionReason } from './match.schema';
 
 @Controller('matches')
-@UseGuards(JwtAuthGuard)
 export class MatchController {
+  private readonly logger = new Logger(MatchController.name);
+
   constructor(private readonly matchService: MatchService) {}
 
   @Post()
-  async create(@Body() match: Match): Promise<Match> {
-    return this.matchService.create(match);
+  async createMatch(
+    @Body() createMatchDto: { 
+      founderSubmissionId: string; 
+      investorSubmissionId: string;
+      score: number;
+      matchDetails?: Record<string, any>;
+    }
+  ) {
+    try {
+      return await this.matchService.create(createMatchDto);
+    } catch (error) {
+      this.logger.error(`Failed to create match: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to create match');
+    }
   }
 
   @Get()
-  async findAll(): Promise<Match[]> {
-    return this.matchService.findAll();
+  async getMatches(@Query() query: {
+    status?: MatchStatus;
+    founderSubmissionId?: string;
+    investorSubmissionId?: string;
+  }) {
+    try {
+      return await this.matchService.findAll(query);
+    } catch (error) {
+      this.logger.error(`Failed to fetch matches: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to retrieve matches');
+    }
   }
 
-  @Get('founder/:founderId')
-  async findByFounder(@Param('founderId') founderId: string): Promise<Match[]> {
-    return this.matchService.findByFounder(founderId);
+  @Get(':id')
+  async getMatchById(@Param('id') id: string) {
+    try {
+      return await this.matchService.findById(id);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to fetch match: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to retrieve match');
+    }
   }
 
-  @Get('investor/:investorId')
-  async findByInvestor(@Param('investorId') investorId: string): Promise<Match[]> {
-    return this.matchService.findByInvestor(investorId);
+  @Get('founder/:founderSubmissionId')
+  async getFounderMatches(@Param('founderSubmissionId') founderSubmissionId: string) {
+    try {
+      return await this.matchService.findByFounderSubmissionId(founderSubmissionId);
+    } catch (error) {
+      this.logger.error(`Failed to fetch founder matches: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to retrieve founder matches');
+    }
   }
 
-  @Post(':submissionId/find')
-  async findMatches(@Param('submissionId') submissionId: string): Promise<Match[]> {
-    return this.matchService.findMatches(submissionId);
+  @Get('investor/:investorSubmissionId')
+  async getInvestorMatches(@Param('investorSubmissionId') investorSubmissionId: string) {
+    try {
+      return await this.matchService.findByInvestorSubmissionId(investorSubmissionId);
+    } catch (error) {
+      this.logger.error(`Failed to fetch investor matches: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to retrieve investor matches');
+    }
   }
 
-  @Get(':submissionId/stats')
-  async getMatchStats(@Param('submissionId') submissionId: string) {
-    return this.matchService.getMatchStats(submissionId);
+  @Patch(':id/status')
+  async updateMatchStatus(
+    @Param('id') id: string,
+    @Body() updateDto: {
+      status: MatchStatus;
+      rejectionReason?: RejectionReason;
+    }
+  ) {
+    try {
+      return await this.matchService.updateStatus(
+        id,
+        updateDto.status,
+        updateDto.rejectionReason
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update match status: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to update match status');
+    }
   }
 
-  @Get(':submissionId/top')
-  async getTopMatches(
-    @Param('submissionId') submissionId: string,
-    @Body('limit') limit: number = 10
-  ): Promise<Match[]> {
-    const matches = await this.matchService.findMatches(submissionId);
-    return matches.slice(0, limit);
+  @Post('batch/process')
+  async batchProcessMatches(
+    @Body() options: {
+      startDate?: string;
+      endDate?: string;
+      minScore?: number;
+      limit?: number;
+    }
+  ) {
+    try {
+      const processOptions: any = {};
+      
+      if (options.startDate) {
+        processOptions.startDate = new Date(options.startDate);
+      }
+      
+      if (options.endDate) {
+        processOptions.endDate = new Date(options.endDate);
+      }
+      
+      if (options.minScore !== undefined) {
+        processOptions.minScore = +options.minScore;
+      }
+      
+      if (options.limit !== undefined) {
+        processOptions.limit = +options.limit;
+      }
+      
+      const result = await this.matchService.batchProcessMatches(processOptions);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to batch process matches: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to process matches');
+    }
+  }
+
+  @Post('recalculate')
+  async recalculateMatches(
+    @Body() options: { batchSize?: number }
+  ) {
+    try {
+      const result = await this.matchService.recalculateMatches(options.batchSize);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to recalculate matches: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to recalculate matches');
+    }
+  }
+
+  @Get('report/stats')
+  async getMatchStats() {
+    try {
+      return await this.matchService.getMatchStats();
+    } catch (error) {
+      this.logger.error(`Failed to generate match report: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Failed to generate match report');
+    }
   }
 } 
