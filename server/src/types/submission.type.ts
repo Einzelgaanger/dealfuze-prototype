@@ -10,6 +10,8 @@ export enum SubmissionType {
 export enum SubmissionStatus {
   PENDING = 'pending',
   ACTIVE = 'active',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
   DELETED = 'deleted',
   ARCHIVED = 'archived'
 }

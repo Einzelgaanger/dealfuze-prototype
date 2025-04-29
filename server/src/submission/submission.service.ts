@@ -17,9 +17,8 @@ import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import matchService from "../match/match.service";
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Document, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
-import { Document } from 'mongoose';
 
 // Cached form lookups to reduce database queries
 const formCache = new Map<string, FormDocument | null>();
@@ -53,7 +52,7 @@ interface SubmissionVirtuals {
 export class SubmissionService {
   constructor(
     @InjectModel(Submission.name) 
-    private submissionModel: Model<SubmissionDocument, {}, {}, {}, SubmissionDocument & Document, {}, {}>
+    private submissionModel: Model<SubmissionDocument>
   ) {}
 
   async create(submission: Partial<Submission>): Promise<SubmissionDocument> {
@@ -66,7 +65,7 @@ export class SubmissionService {
       id,
       { ...submission, lastUpdated: new Date() },
       { new: true }
-    ).exec();
+    );
   }
 
   async softDelete(id: string): Promise<SubmissionDocument | null> {
@@ -78,7 +77,7 @@ export class SubmissionService {
         status: SubmissionStatus.DELETED
       },
       { new: true }
-    ).exec();
+    );
   }
 
   async updateCharacterTraits(
@@ -94,7 +93,7 @@ export class SubmissionService {
         }
       },
       { new: true }
-    ).exec();
+    );
   }
 
   async updateFamilyInfo(
@@ -110,7 +109,7 @@ export class SubmissionService {
         }
       },
       { new: true }
-    ).exec();
+    );
   }
 
   async updateMatchScore(
@@ -124,23 +123,22 @@ export class SubmissionService {
         lastMatchUpdate: new Date()
       },
       { new: true }
-    ).exec();
+    );
   }
 
   async findAll(includeDeleted = false): Promise<SubmissionDocument[]> {
     const query = includeDeleted ? {} : { isDeleted: false };
-    return this.submissionModel.find(query).sort({ matchScore: -1 }).exec();
+    return this.submissionModel.find(query).sort({ matchScore: -1 });
   }
 
   async findById(id: string): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findById(id).exec();
+    return this.submissionModel.findById(id);
   }
 
   async findByType(type: SubmissionType): Promise<SubmissionDocument[]> {
     return this.submissionModel
       .find({ type, isDeleted: false })
-      .sort({ matchScore: -1 })
-      .exec();
+      .sort({ matchScore: -1 });
   }
 
   async findBestMatches(
@@ -154,8 +152,7 @@ export class SubmissionService {
         status: SubmissionStatus.ACTIVE
       })
       .sort({ matchScore: -1 })
-      .limit(limit)
-      .exec();
+      .limit(limit);
   }
 
   async cleanupDeletedSubmissions(daysToKeep = 30): Promise<number> {
@@ -165,7 +162,7 @@ export class SubmissionService {
     const result = await this.submissionModel.deleteMany({
       isDeleted: true,
       deletedAt: { $lt: cutoffDate }
-    }).exec();
+    });
 
     return result.deletedCount || 0;
   }
