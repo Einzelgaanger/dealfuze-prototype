@@ -13,6 +13,6 @@ import { SubmissionModule } from '../submission/submission.module';
   ],
   controllers: [MatchController],
   providers: [MatchService, MatchCalculationService],
-  exports: [MatchService, MatchCalculationService]
+  exports: [MatchService]
 })
 export class MatchModule {} 

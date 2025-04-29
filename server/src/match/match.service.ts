@@ -194,7 +194,7 @@ export class MatchService {
       { $limit: 5 }
     ]).exec();
 
-    result.topIndustries = industries.map(i => i._id);
+    result.topIndustries = industries.map((i: { _id: string }) => i._id);
 
     return result;
   }
