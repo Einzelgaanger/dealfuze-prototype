@@ -2,18 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { SubmissionDocument } from '../submission/submission.schema';
 import { MatchCriteria } from './match.schema';
 
+// Updated interface to match the schema
+interface MatchCriteriaResult {
+  industryMatch: number;
+  fundingStageMatch: number;
+  investmentSizeMatch: number;
+  geographyMatch: number;
+  businessModelMatch: number;
+}
+
 @Injectable()
 export class MatchCalculationService {
   async calculateMatchScore(
     founderSubmission: SubmissionDocument,
     investorSubmission: SubmissionDocument,
-  ): Promise<{ score: number; matchCriteria: MatchCriteria }> {
-    const matchCriteria: MatchCriteria = {
-      industryMatch: false,
-      stageMatch: false,
-      marketSizeMatch: false,
-      investmentRangeMatch: false,
-      locationMatch: false
+  ): Promise<{ score: number; matchCriteria: MatchCriteriaResult }> {
+    const matchCriteria: MatchCriteriaResult = {
+      industryMatch: 0,
+      fundingStageMatch: 0,
+      investmentSizeMatch: 0,
+      geographyMatch: 0,
+      businessModelMatch: 0
     };
     
     // Extract data for matching
@@ -41,7 +50,7 @@ export class MatchCalculationService {
         industry.toLowerCase() === founderData.industry.toLowerCase() ||
         this.isRelatedIndustry(industry, founderData.industry)
       )) {
-        matchCriteria.industryMatch = true;
+        matchCriteria.industryMatch = 1;
         weightedScore += weights.industry;
       }
     }
@@ -55,7 +64,7 @@ export class MatchCalculationService {
       if (preferredStages.some(stage => 
         stage.toLowerCase() === founderData.companyStage.toLowerCase()
       )) {
-        matchCriteria.stageMatch = true;
+        matchCriteria.fundingStageMatch = 1;
         weightedScore += weights.stage;
       }
     }
@@ -66,7 +75,7 @@ export class MatchCalculationService {
       const investorMinMarketSize = this.parseMarketSize(investorData.minMarketSize);
       
       if (founderMarketSize >= investorMinMarketSize) {
-        matchCriteria.marketSizeMatch = true;
+        matchCriteria.investmentSizeMatch = 1;
         weightedScore += weights.marketSize;
       }
     }
@@ -78,7 +87,7 @@ export class MatchCalculationService {
       const investmentMax = this.parseInvestmentAmount(investorData.investmentRange.max);
       
       if (fundingNeeded >= investmentMin && fundingNeeded <= investmentMax) {
-        matchCriteria.investmentRangeMatch = true;
+        matchCriteria.investmentSizeMatch = 1;
         weightedScore += weights.investmentRange;
       }
     }
@@ -94,7 +103,7 @@ export class MatchCalculationService {
             location.toLowerCase() === founderData.location.toLowerCase() ||
             this.isNearbyLocation(location, founderData.location)
           )) {
-        matchCriteria.locationMatch = true;
+        matchCriteria.geographyMatch = 1;
         weightedScore += weights.location;
       }
     }

@@ -9,9 +9,13 @@ export interface MatchField {
 }
 
 export interface IMatchCriteria {
-  pipelineId: ObjectId;
-  matchCriteria: Array<MatchField>;
-  useLinkedinPersonality: boolean;
+  industry: number;
+  fundingStage: number;
+  marketSize: number;
+  investmentRange: number;
+  location: number;
+  personality: number;
+  total: number;
 }
 
 export enum MatchType {

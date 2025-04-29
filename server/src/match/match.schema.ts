@@ -1,82 +1,75 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Types } from 'mongoose';
+import { SubmissionStatus } from '../types/submission.type';
+import { IMatchCriteria } from '../types/matchCriteria.type';
 
 export enum MatchStatus {
   PENDING = 'pending',
-  VIEWED = 'viewed',
   ACCEPTED = 'accepted',
   REJECTED = 'rejected',
-  ARCHIVED = 'archived'
+  EXPIRED = 'expired',
 }
 
 export enum RejectionReason {
   NOT_INTERESTED = 'not_interested',
-  BAD_FIT = 'bad_fit', 
-  TIMING_ISSUE = 'timing_issue',
-  OTHER = 'other'
+  WRONG_INDUSTRY = 'wrong_industry',
+  WRONG_STAGE = 'wrong_stage',
+  WRONG_MARKET_SIZE = 'wrong_market_size',
+  WRONG_INVESTMENT_RANGE = 'wrong_investment_range',
+  WRONG_LOCATION = 'wrong_location',
+  OTHER = 'other',
 }
-
-export interface MatchCriteria {
-  industryMatch?: number;
-  fundingStageMatch?: number;
-  investmentSizeMatch?: number;
-  geographyMatch?: number;
-  businessModelMatch?: number;
-}
-
-export type MatchDocument = Match & Document;
 
 @Schema({ timestamps: true })
-export class Match {
-  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Submission' })
-  founderSubmissionId: string;
+export class Match extends Document {
+  @Prop({ type: Types.ObjectId, required: true, ref: 'Submission' })
+  founderSubmissionId: Types.ObjectId = new Types.ObjectId();
 
-  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'Submission' })
-  investorSubmissionId: string;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'Submission' })
+  investorSubmissionId: Types.ObjectId = new Types.ObjectId();
 
-  @Prop({ required: true, type: Number })
-  score: number;
+  @Prop({ type: Number, required: true, min: 0, max: 100 })
+  score: number = 0;
 
-  @Prop({ required: true, enum: MatchStatus, default: MatchStatus.PENDING })
-  status: MatchStatus;
+  @Prop({ type: String, enum: MatchStatus, default: MatchStatus.PENDING })
+  status: MatchStatus = MatchStatus.PENDING;
 
-  @Prop({ type: Date })
-  viewedAt?: Date;
-  
-  @Prop({ type: Date })
-  acceptedAt?: Date;
-  
-  @Prop({ type: Date })
-  rejectedAt?: Date;
-  
-  @Prop({ enum: RejectionReason })
+  @Prop({ type: String, enum: RejectionReason })
   rejectionReason?: RejectionReason;
 
+  @Prop({ type: String })
+  rejectionNotes?: string;
+
   @Prop({ type: Date })
-  archivedAt?: Date;
+  acceptedAt?: Date;
 
-  @Prop({ type: Object })
-  matchDetails?: Record<string, any>;
+  @Prop({ type: Date })
+  rejectedAt?: Date;
 
-  @Prop({ type: Object, default: {} })
-  matchCriteria: MatchCriteria;
+  @Prop({ type: Date })
+  expiredAt?: Date;
+
+  @Prop({ type: Object, required: true })
+  matchCriteria: IMatchCriteria = {
+    industry: 0,
+    fundingStage: 0,
+    marketSize: 0,
+    investmentRange: 0,
+    location: 0,
+    personality: 0,
+    total: 0
+  };
 
   @Prop({ type: Boolean, default: false })
-  isHighPriority: boolean;
+  isHighPriority: boolean = false;
 
-  @Prop({ type: Object, default: {} })
-  metadata: Record<string, any>;
+  @Prop({ type: Object })
+  metadata: Record<string, any> = {};
 }
 
 export const MatchSchema = SchemaFactory.createForClass(Match);
 
 // Create indexes for efficient querying
-MatchSchema.index({ founderSubmissionId: 1 });
-MatchSchema.index({ investorSubmissionId: 1 });
-MatchSchema.index({ score: -1 }); // Index scores in descending order
-MatchSchema.index({ status: 1 });
-
-// Create compound indexes
 MatchSchema.index({ founderSubmissionId: 1, investorSubmissionId: 1 }, { unique: true });
-MatchSchema.index({ createdAt: -1 });
-MatchSchema.index({ status: 1, score: -1 }); 
+MatchSchema.index({ status: 1, score: -1 });
+MatchSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 }); // 30 days TTL 
