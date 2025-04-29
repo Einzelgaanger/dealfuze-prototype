@@ -3,95 +3,92 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Match, MatchDocument, MatchStatus, RejectionReason } from './match.schema';
 import { IMatchCriteria } from '../types/matchCriteria.type';
+import { SubmissionService } from '../submission/submission.service';
 
 @Injectable()
 export class MatchService {
   private readonly logger = new Logger(MatchService.name);
 
   constructor(
-    @InjectModel(Match.name) private matchModel: Model<MatchDocument>
+    @InjectModel(Match.name) private matchModel: Model<MatchDocument>,
+    private submissionService: SubmissionService
   ) {}
 
   async create(
-    founderSubmissionId: Types.ObjectId,
-    investorSubmissionId: Types.ObjectId,
+    founderSubmissionId: string,
+    investorSubmissionId: string,
     score: number,
-    matchCriteria: IMatchCriteria,
-    metadata?: Record<string, any>
+    criteria: Record<string, number>
   ): Promise<MatchDocument> {
-    const newMatch = new this.matchModel({
-      founderSubmissionId,
-      investorSubmissionId,
+    const match = new this.matchModel({
+      founderSubmissionId: new Types.ObjectId(founderSubmissionId),
+      investorSubmissionId: new Types.ObjectId(investorSubmissionId),
       score,
-      matchCriteria,
-      metadata
+      criteria,
+      status: MatchStatus.PENDING,
+      createdAt: new Date()
     });
-    return newMatch.save();
+    return match.save();
   }
 
-  async findAll(query?: {
-    status?: MatchStatus;
-    founderSubmissionId?: string;
-    investorSubmissionId?: string;
-  }): Promise<MatchDocument[]> {
-    const filter: any = {};
-    if (query?.status) filter.status = query.status;
-    if (query?.founderSubmissionId) filter.founderSubmissionId = new Types.ObjectId(query.founderSubmissionId);
-    if (query?.investorSubmissionId) filter.investorSubmissionId = new Types.ObjectId(query.investorSubmissionId);
-    return this.matchModel.find(filter).exec();
+  async findAll(): Promise<MatchDocument[]> {
+    return this.matchModel.find().sort({ score: -1 }).exec();
   }
 
-  async findById(id: Types.ObjectId): Promise<MatchDocument | null> {
+  async findById(id: string): Promise<MatchDocument | null> {
     return this.matchModel.findById(id).exec();
   }
 
-  async findByFounderSubmissionId(founderSubmissionId: Types.ObjectId): Promise<MatchDocument[]> {
-    return this.matchModel.find({ founderSubmissionId }).exec();
+  async findByFounderSubmissionId(id: string): Promise<MatchDocument[]> {
+    return this.matchModel
+      .find({ founderSubmissionId: new Types.ObjectId(id) })
+      .sort({ score: -1 })
+      .exec();
   }
 
-  async findByInvestorSubmissionId(investorSubmissionId: Types.ObjectId): Promise<MatchDocument[]> {
-    return this.matchModel.find({ investorSubmissionId }).exec();
+  async findByInvestorSubmissionId(id: string): Promise<MatchDocument[]> {
+    return this.matchModel
+      .find({ investorSubmissionId: new Types.ObjectId(id) })
+      .sort({ score: -1 })
+      .exec();
   }
 
-  async update(id: Types.ObjectId, updateData: Partial<Match>): Promise<MatchDocument | null> {
-    return this.matchModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+  async update(id: string, match: Partial<Match>): Promise<MatchDocument | null> {
+    return this.matchModel.findByIdAndUpdate(
+      id,
+      { ...match, lastUpdated: new Date() },
+      { new: true }
+    ).exec();
   }
 
-  async delete(id: Types.ObjectId): Promise<MatchDocument | null> {
+  async delete(id: string): Promise<MatchDocument | null> {
     return this.matchModel.findByIdAndDelete(id).exec();
   }
 
   async updateStatus(
-    id: Types.ObjectId,
+    id: string,
     status: MatchStatus,
-    rejectionReason?: RejectionReason
+    notes?: string
   ): Promise<MatchDocument | null> {
-    const updateData: Partial<Match> = { status };
-    if (status === MatchStatus.ACCEPTED) {
-      updateData.acceptedAt = new Date();
-    } else if (status === MatchStatus.REJECTED) {
-      updateData.rejectedAt = new Date();
-      if (rejectionReason) {
-        updateData.rejectionReason = rejectionReason;
-      }
-    } else if (status === MatchStatus.EXPIRED) {
-      updateData.expiredAt = new Date();
-    } else if (status === MatchStatus.VIEWED) {
-      updateData.viewedAt = new Date();
-    } else if (status === MatchStatus.ARCHIVED) {
-      updateData.archivedAt = new Date();
-    }
-    return this.matchModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+    return this.matchModel.findByIdAndUpdate(
+      id,
+      { 
+        status,
+        statusUpdatedAt: new Date(),
+        notes
+      },
+      { new: true }
+    ).exec();
   }
 
   async rejectMatch(
-    id: Types.ObjectId,
+    id: string,
     reason: RejectionReason,
     notes?: string
   ): Promise<MatchDocument | null> {
     return this.matchModel.findByIdAndUpdate(
       id,
-      {
+      { 
         status: MatchStatus.REJECTED,
         rejectionReason: reason,
         rejectionNotes: notes,
@@ -101,101 +98,116 @@ export class MatchService {
     ).exec();
   }
 
-  async batchProcessMatches(options: {
-    startDate?: Date;
-    endDate?: Date;
-    minScore?: number;
-    limit?: number;
-  } = {}): Promise<{ processed: number; created: number; updated: number }> {
-    const filter: any = {};
-    if (options.startDate) filter.createdAt = { $gte: options.startDate };
-    if (options.endDate) filter.createdAt = { ...filter.createdAt, $lte: options.endDate };
-    if (options.minScore !== undefined) filter.score = { $gte: options.minScore };
+  async batchProcessMatches(
+    founderSubmissionId: string,
+    investorSubmissionIds: string[],
+    scores: number[],
+    criteria: Record<string, number>[]
+  ): Promise<MatchDocument[]> {
+    const matches = investorSubmissionIds.map((id, index) => ({
+      founderSubmissionId: new Types.ObjectId(founderSubmissionId),
+      investorSubmissionId: new Types.ObjectId(id),
+      score: scores[index],
+      criteria: criteria[index],
+      status: MatchStatus.PENDING,
+      createdAt: new Date()
+    }));
 
-    const matches = await this.matchModel.find(filter)
-      .limit(options.limit || 100)
-      .exec();
-
-    let processed = 0;
-    let created = 0;
-    let updated = 0;
-
-    for (const match of matches) {
-      processed++;
-      if (match.status === MatchStatus.PENDING) {
-        // Process the match
-        // This is where you would implement your match processing logic
-        updated++;
-      }
-    }
-
-    return { processed, created, updated };
+    return this.matchModel.insertMany(matches);
   }
 
-  async recalculateMatches(batchSize: number = 100): Promise<{ processed: number; updated: number }> {
-    const matches = await this.matchModel.find()
-      .limit(batchSize)
+  async recalculateMatches(
+    founderSubmissionId: string,
+    newScores: number[],
+    newCriteria: Record<string, number>[]
+  ): Promise<MatchDocument[]> {
+    // First, get all existing matches for this founder
+    const existingMatches = await this.matchModel
+      .find({ founderSubmissionId: new Types.ObjectId(founderSubmissionId) })
       .exec();
 
-    let processed = 0;
-    let updated = 0;
+    // Update each match with new scores and criteria
+    const updates = existingMatches.map((match, index) => ({
+      updateOne: {
+        filter: { _id: match._id },
+        update: {
+          $set: {
+            score: newScores[index],
+            criteria: newCriteria[index],
+            lastUpdated: new Date()
+          }
+        }
+      }
+    }));
 
-    for (const match of matches) {
-      processed++;
-      // Recalculate match score and criteria
-      // This is where you would implement your recalculation logic
-      updated++;
-    }
+    // Perform bulk update
+    await this.matchModel.bulkWrite(updates);
 
-    return { processed, updated };
+    // Return updated matches
+    return this.matchModel
+      .find({ founderSubmissionId: new Types.ObjectId(founderSubmissionId) })
+      .sort({ score: -1 })
+      .exec();
   }
 
   async getMatchStats(): Promise<{
     total: number;
-    byStatus: Record<MatchStatus, number>;
+    pending: number;
+    accepted: number;
+    rejected: number;
     averageScore: number;
-    topIndustries: string[];
+    topIndustries: { industry: string; count: number }[];
   }> {
     const stats = await this.matchModel.aggregate([
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          averageScore: { $avg: '$score' },
-          byStatus: {
-            $push: {
-              status: '$status',
-              count: 1
-            }
-          }
+      { $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+          avgScore: { $avg: "$score" }
         }
       }
     ]).exec();
 
-    const result = {
-      total: stats[0]?.total || 0,
-      byStatus: {} as Record<MatchStatus, number>,
-      averageScore: stats[0]?.averageScore || 0,
-      topIndustries: [] as string[]
-    };
-
-    // Process status counts
-    if (stats[0]?.byStatus) {
-      stats[0].byStatus.forEach((stat: { status: MatchStatus; count: number }) => {
-        result.byStatus[stat.status] = (result.byStatus[stat.status] || 0) + stat.count;
-      });
-    }
-
-    // Get top industries
-    const industries = await this.matchModel.aggregate([
-      { $unwind: '$matchCriteria.industry' },
-      { $group: { _id: '$matchCriteria.industry', count: { $sum: 1 } } },
+    const industryStats = await this.matchModel.aggregate([
+      { $unwind: "$criteria" },
+      { $group: {
+          _id: "$criteria.industry",
+          count: { $sum: 1 }
+        }
+      },
       { $sort: { count: -1 } },
       { $limit: 5 }
     ]).exec();
 
-    result.topIndustries = industries.map((i: { _id: string }) => i._id);
+    let total = 0;
+    let pending = 0;
+    let accepted = 0;
+    let rejected = 0;
+    let totalScore = 0;
+    let matchCount = 0;
 
-    return result;
+    stats.forEach((stat: { _id: string; count: number; avgScore: number }) => {
+      total += stat.count;
+      if (stat._id === MatchStatus.PENDING) pending = stat.count;
+      if (stat._id === MatchStatus.ACCEPTED) accepted = stat.count;
+      if (stat._id === MatchStatus.REJECTED) rejected = stat.count;
+      totalScore += stat.avgScore * stat.count;
+      matchCount += stat.count;
+    });
+
+    const averageScore = matchCount > 0 ? totalScore / matchCount : 0;
+
+    const topIndustries = industryStats.map((stat: { _id: string; count: number }) => ({
+      industry: stat._id,
+      count: stat.count
+    }));
+
+    return {
+      total,
+      pending,
+      accepted,
+      rejected,
+      averageScore,
+      topIndustries
+    };
   }
 } 

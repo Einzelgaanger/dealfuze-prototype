@@ -1,21 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { SubmissionStatus, SubmissionDataType } from '../types/submission.type';
-
-export type SubmissionDocument = Submission & Document;
+import { SubmissionType, SubmissionStatus, SubmissionDataType } from '../types/submission.type';
 
 @Schema({ timestamps: true })
-export class Submission {
-  @Prop({ type: Types.ObjectId, ref: 'Form', required: true, index: true })
+export class Submission extends Document {
+  @Prop({ type: Types.ObjectId, required: true, ref: 'Form' })
   formId!: Types.ObjectId;
 
-  @Prop({ type: String, required: true, enum: ['founder', 'investor'] })
-  type!: 'founder' | 'investor';
+  @Prop({ type: String, enum: SubmissionType, required: true })
+  type!: SubmissionType;
 
   @Prop({ type: Object, required: true })
   data!: SubmissionDataType;
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date, required: true })
   submittedAt!: Date;
 
   @Prop({ type: String })
@@ -24,21 +22,16 @@ export class Submission {
   @Prop({ type: String })
   userAgent?: string;
 
-  @Prop({ type: String, required: true })
-  name!: string;
+  @Prop({ type: String })
+  name?: string;
 
-  @Prop({ type: String, required: true })
-  email!: string;
+  @Prop({ type: String })
+  email?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'LinkedInProfile' })
   linkedInProfileId?: Types.ObjectId;
 
-  @Prop({ 
-    type: String, 
-    enum: Object.values(SubmissionStatus),
-    default: SubmissionStatus.PENDING,
-    required: true 
-  })
+  @Prop({ type: String, enum: SubmissionStatus, default: SubmissionStatus.PENDING })
   status!: SubmissionStatus;
 
   @Prop({ type: Object })
@@ -73,10 +66,12 @@ export class Submission {
   lastMatchUpdate?: Date;
 }
 
+export type SubmissionDocument = Submission & Document;
 export const SubmissionSchema = SchemaFactory.createForClass(Submission);
 
-// Create indexes for efficient querying
+// Create indexes
 SubmissionSchema.index({ formId: 1, submittedAt: -1 });
 SubmissionSchema.index({ type: 1, status: 1 });
-SubmissionSchema.index({ isDeleted: 1 });
+SubmissionSchema.index({ email: 1 });
+SubmissionSchema.index({ name: 1 });
 SubmissionSchema.index({ matchScore: -1 }); 

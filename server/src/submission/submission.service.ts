@@ -19,6 +19,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
+import { MatchService } from '../match/match.service';
 
 // Cached form lookups to reduce database queries
 const formCache = new Map<string, FormDocument | null>();
@@ -52,7 +53,8 @@ interface SubmissionVirtuals {
 export class SubmissionService {
   constructor(
     @InjectModel(Submission.name) 
-    private submissionModel: Model<SubmissionDocument>
+    private submissionModel: Model<SubmissionDocument>,
+    private matchService: MatchService
   ) {}
 
   async create(submission: Partial<Submission>): Promise<SubmissionDocument> {
@@ -65,7 +67,7 @@ export class SubmissionService {
       id,
       { ...submission, lastUpdated: new Date() },
       { new: true }
-    );
+    ).exec();
   }
 
   async softDelete(id: string): Promise<SubmissionDocument | null> {
@@ -77,7 +79,7 @@ export class SubmissionService {
         status: SubmissionStatus.DELETED
       },
       { new: true }
-    );
+    ).exec();
   }
 
   async updateCharacterTraits(
@@ -93,7 +95,7 @@ export class SubmissionService {
         }
       },
       { new: true }
-    );
+    ).exec();
   }
 
   async updateFamilyInfo(
@@ -109,7 +111,7 @@ export class SubmissionService {
         }
       },
       { new: true }
-    );
+    ).exec();
   }
 
   async updateMatchScore(
@@ -123,22 +125,23 @@ export class SubmissionService {
         lastMatchUpdate: new Date()
       },
       { new: true }
-    );
+    ).exec();
   }
 
   async findAll(includeDeleted = false): Promise<SubmissionDocument[]> {
     const query = includeDeleted ? {} : { isDeleted: false };
-    return this.submissionModel.find(query).sort({ matchScore: -1 });
+    return this.submissionModel.find(query).sort({ matchScore: -1 }).exec();
   }
 
   async findById(id: string): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findById(id);
+    return this.submissionModel.findById(id).exec();
   }
 
   async findByType(type: SubmissionType): Promise<SubmissionDocument[]> {
     return this.submissionModel
       .find({ type, isDeleted: false })
-      .sort({ matchScore: -1 });
+      .sort({ matchScore: -1 })
+      .exec();
   }
 
   async findBestMatches(
@@ -152,7 +155,8 @@ export class SubmissionService {
         status: SubmissionStatus.ACTIVE
       })
       .sort({ matchScore: -1 })
-      .limit(limit);
+      .limit(limit)
+      .exec();
   }
 
   async cleanupDeletedSubmissions(daysToKeep = 30): Promise<number> {
@@ -162,7 +166,7 @@ export class SubmissionService {
     const result = await this.submissionModel.deleteMany({
       isDeleted: true,
       deletedAt: { $lt: cutoffDate }
-    });
+    }).exec();
 
     return result.deletedCount || 0;
   }
@@ -172,16 +176,16 @@ export class SubmissionService {
    */
   async createSubmission(
     formId: string,
-    data: any,
+    data: SubmissionDataType,
     userAgent: string,
     ip: string
   ): Promise<{ redirectUrl?: string; successMessage: string; submissionId?: string }> {
     // Use cached form data if available
-    let form: FormDocument | null;
+    let form: FormDocument | null = null;
     const cacheKey = `form-${formId}`;
     
     if (formCache.has(cacheKey)) {
-      form = formCache.get(cacheKey);
+      form = formCache.get(cacheKey) || null;
     } else {
       // If not in cache, fetch from database
       form = await FormModel.findById(formId).lean();
@@ -228,7 +232,6 @@ export class SubmissionService {
     };
 
     // Use create operation with optimized write concern for better performance
-    // This allows the database to acknowledge writes more efficiently
     const createdSubmission = await this.submissionModel.create(
       [submissionToCreate],
       { writeConcern: { w: 1, j: false } } // Write without journal sync for better performance
@@ -262,7 +265,7 @@ export class SubmissionService {
       await this.submissionModel.updateOne(
         { _id: submission._id },
         { $set: { status: SubmissionStatus.COMPLETED } }
-      );
+      ).exec();
     } catch (error) {
       console.error(`Error processing submission ${submissionId}:`, error);
       
@@ -280,13 +283,13 @@ export class SubmissionService {
         await this.submissionModel.updateOne(
           { _id: new Types.ObjectId(submissionId) },
           { $set: { status: SubmissionStatus.FAILED } }
-        ).catch(err => console.error(`Failed to update submission status for ${submissionId}:`, err));
+        ).exec().catch(err => console.error(`Failed to update submission status for ${submissionId}:`, err));
       }
     }
   }
 
   async getSubmissionById(id: string): Promise<SubmissionDocument | null> {
-    return this.submissionModel.findById(id);
+    return this.submissionModel.findById(id).exec();
   }
 
   /**
@@ -311,7 +314,7 @@ export class SubmissionService {
       // Use countDocuments with specific index for better performance
       this.submissionModel.countDocuments({ 
         formId: new Types.ObjectId(formId) 
-      }).hint({ formId: 1 }),
+      }).exec(),
       
       // Use lean() and projection to reduce memory usage and improve query performance
       this.submissionModel.find({ 
@@ -350,12 +353,11 @@ export class SubmissionService {
    * Update submission status with optimized write operation
    */
   async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionDocument | null> {
-    // Use findOneAndUpdate with lean() for better performance
     return this.submissionModel.findOneAndUpdate(
       { _id: new Types.ObjectId(id) },
       { $set: { status } },
       { new: true, lean: true }
-    );
+    ).exec();
   }
 
   /**
@@ -371,7 +373,7 @@ export class SubmissionService {
     await this.submissionModel.deleteMany(
       { _id: { $in: objectIds } },
       { writeConcern: { w: 1, j: false } } // Faster writes
-    );
+    ).exec();
   }
 
   /**
