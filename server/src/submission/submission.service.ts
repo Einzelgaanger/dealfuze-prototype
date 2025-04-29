@@ -19,6 +19,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
 import { MatchService } from '../match/match.service';
+import { PersonalityService } from '../personality/personality.service';
 
 // Cached form lookups to reduce database queries
 const formCache = new Map<string, FormDocument | null>();
@@ -36,6 +37,8 @@ interface FormattedSubmission {
   email: string;
   linkedInProfileId: string;
   status: SubmissionStatus;
+  matchScore: number;
+  isDeleted: boolean;
 }
 
 interface SubmissionQueryHelpers {
@@ -53,18 +56,35 @@ interface SubmissionVirtuals {
 @Injectable()
 export class SubmissionService {
   constructor(
-    @InjectModel(SubmissionModel.name) 
+    @InjectModel('Submission')
     private submissionModel: Model<SubmissionDocument>,
-    private matchService: MatchService
+    private matchService: MatchService,
+    private personalityService: PersonalityService
   ) {}
 
-  async createSubmission(data: SubmissionDataType): Promise<SubmissionDocument> {
-    const submission = new this.submissionModel(data);
+  async createSubmission(
+    formId: string,
+    data: SubmissionDataType,
+    userAgent: string,
+    ipAddress: string,
+    type: SubmissionType = SubmissionType.FOUNDER
+  ): Promise<SubmissionDocument> {
+    const submission = new this.submissionModel({
+      formId: new Types.ObjectId(formId),
+      data,
+      userAgent,
+      ipAddress,
+      submittedAt: new Date(),
+      status: SubmissionStatus.PENDING,
+      type,
+      isDeleted: false,
+      matchScore: 0
+    });
     return submission.save();
   }
 
   async findAll(): Promise<SubmissionDocument[]> {
-    return this.submissionModel.find().exec();
+    return this.submissionModel.find({ isDeleted: false }).exec();
   }
 
   async findById(id: string): Promise<SubmissionDocument | null> {
@@ -72,7 +92,7 @@ export class SubmissionService {
   }
 
   async findByFormId(formId: string): Promise<SubmissionDocument[]> {
-    return this.submissionModel.find({ formId }).exec();
+    return this.submissionModel.find({ formId: new Types.ObjectId(formId), isDeleted: false }).exec();
   }
 
   async update(id: string, data: Partial<ISubmission>): Promise<SubmissionDocument | null> {
@@ -80,7 +100,15 @@ export class SubmissionService {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.submissionModel.findByIdAndDelete(id).exec();
+    const result = await this.submissionModel.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        status: SubmissionStatus.DELETED
+      },
+      { new: true }
+    ).exec();
     return !!result;
   }
 
@@ -93,31 +121,35 @@ export class SubmissionService {
   }
 
   async formatSubmission(submission: SubmissionDocument): Promise<FormattedSubmission> {
+    if (!submission._id) {
+      throw new Error('Submission must have an _id');
+    }
+
     return {
       id: submission._id.toString(),
-      formId: submission.formId,
+      formId: submission.formId.toString(),
       type: submission.type,
       data: submission.data,
       submittedAt: submission.submittedAt,
-      ipAddress: submission.ipAddress,
-      userAgent: submission.userAgent,
-      name: submission.name,
-      email: submission.email,
-      linkedInProfileId: submission.linkedInProfileId,
-      status: submission.status
+      ipAddress: submission.ipAddress || '',
+      userAgent: submission.userAgent || '',
+      name: submission.name || '',
+      email: submission.email || '',
+      linkedInProfileId: submission.linkedInProfileId?.toString() || '',
+      status: submission.status,
+      matchScore: submission.matchScore || 0,
+      isDeleted: submission.isDeleted || false
     };
   }
 
-  async getSubmissionsByFormId(formId: string): Promise<FormattedSubmission[]> {
-    const submissions = await this.submissionModel
-      .find({ formId })
+  async getSubmissionsByFormId(formId: string): Promise<SubmissionDocument[]> {
+    return this.submissionModel
+      .find({ formId: new Types.ObjectId(formId), isDeleted: false })
       .sort({ submittedAt: -1 })
       .exec();
-
-    return Promise.all(submissions.map(sub => this.formatSubmission(sub)));
   }
 
-  async create(submission: Partial<Submission>): Promise<SubmissionDocument> {
+  async create(submission: Partial<ISubmission>): Promise<SubmissionDocument> {
     const createdSubmission = new this.submissionModel(submission);
     return createdSubmission.save();
   }
@@ -200,48 +232,6 @@ export class SubmissionService {
     }).exec();
 
     return result.deletedCount || 0;
-  }
-
-  /**
-   * Create a submission with optimized database operations for high-scale usage
-   */
-  async createSubmission(
-    formId: string,
-    data: SubmissionDataType,
-    userAgent: string,
-    ip: string
-  ): Promise<{ successMessage: string; submissionId?: string }> {
-    const form = await this.submissionModel.findOne({ formId }).lean();
-    
-    if (!form) {
-      return { successMessage: "Form not found" };
-    }
-
-    const submissionToCreate = {
-      formId: new Types.ObjectId(formId),
-      data,
-      userAgent,
-      ipAddress: ip,
-      submittedAt: new Date(),
-      status: SubmissionStatus.PENDING,
-      type: 'FORM' as SubmissionType,
-      isDeleted: false,
-      matchScore: 0
-    };
-
-    const createdSubmission = await this.submissionModel.create(submissionToCreate);
-    
-    if (createdSubmission && createdSubmission._id) {
-      this.processSubmissionAsync(createdSubmission._id.toString())
-        .catch((err: Error) => console.error(`Error processing submission ${createdSubmission._id}: ${err}`));
-      
-      return {
-        successMessage: "Submission created successfully",
-        submissionId: createdSubmission._id.toString()
-      };
-    }
-
-    return { successMessage: "Failed to create submission" };
   }
 
   /**
