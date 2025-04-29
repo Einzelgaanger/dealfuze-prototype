@@ -4,15 +4,7 @@ import {
   SubmissionStatus,
   SubmissionType,
 } from "../types/submission.type";
-import FormModel from "../db/models/form.schema";
-import SubmissionModel from "../db/models/submission.schema";
-import { createFormSchema } from "../utils";
 import { FormDocument } from "../types/form.type";
-import MatchCriteriaModel from "../db/models/matchCriteria.schema";
-import {
-  personalityService,
-  requestLinkedInProfile,
-} from "../personality/personality.service";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -31,14 +23,13 @@ interface FormattedSubmission {
   type: SubmissionType;
   data: SubmissionDataType;
   submittedAt: Date;
-  ipAddress: string;
-  userAgent: string;
-  name: string;
-  email: string;
-  linkedInProfileId: string;
+  ipAddress?: string;
+  userAgent?: string;
+  name?: string;
+  email?: string;
+  linkedInProfileId?: string;
   status: SubmissionStatus;
   matchScore: number;
-  isDeleted: boolean;
 }
 
 interface SubmissionQueryHelpers {
@@ -56,7 +47,7 @@ interface SubmissionVirtuals {
 @Injectable()
 export class SubmissionService {
   constructor(
-    @InjectModel('Submission')
+    @InjectModel(Submission.name)
     private submissionModel: Model<SubmissionDocument>,
     private matchService: MatchService,
     private personalityService: PersonalityService
@@ -120,25 +111,20 @@ export class SubmissionService {
     ).exec();
   }
 
-  async formatSubmission(submission: SubmissionDocument): Promise<FormattedSubmission> {
-    if (!submission._id) {
-      throw new Error('Submission must have an _id');
-    }
-
+  private async formatSubmission(submission: SubmissionDocument): Promise<FormattedSubmission> {
     return {
-      id: submission._id.toString(),
-      formId: submission.formId.toString(),
+      id: (submission._id as Types.ObjectId).toString(),
+      formId: (submission.formId as Types.ObjectId).toString(),
       type: submission.type,
       data: submission.data,
       submittedAt: submission.submittedAt,
-      ipAddress: submission.ipAddress || '',
-      userAgent: submission.userAgent || '',
-      name: submission.name || '',
-      email: submission.email || '',
-      linkedInProfileId: submission.linkedInProfileId?.toString() || '',
+      ipAddress: submission.ipAddress,
+      userAgent: submission.userAgent,
+      name: submission.name,
+      email: submission.email,
+      linkedInProfileId: submission.linkedInProfileId ? (submission.linkedInProfileId as Types.ObjectId).toString() : undefined,
       status: submission.status,
-      matchScore: submission.matchScore || 0,
-      isDeleted: submission.isDeleted || false
+      matchScore: submission.matchScore || 0
     };
   }
 
@@ -156,14 +142,14 @@ export class SubmissionService {
 
   async updateCharacterTraits(
     id: string,
-    traits: Partial<Submission['characterTraits']>
+    traits: Partial<SubmissionDocument['characterTraits']>
   ): Promise<SubmissionDocument | null> {
     return this.submissionModel.findByIdAndUpdate(
       id,
       { 
-        characterTraits: {
-          ...traits,
-          lastUpdated: new Date()
+        $set: {
+          'characterTraits': traits,
+          'characterTraits.lastUpdated': new Date()
         }
       },
       { new: true }
@@ -172,14 +158,14 @@ export class SubmissionService {
 
   async updateFamilyInfo(
     id: string,
-    info: Partial<Submission['familyInfo']>
+    info: Partial<SubmissionDocument['familyInfo']>
   ): Promise<SubmissionDocument | null> {
     return this.submissionModel.findByIdAndUpdate(
       id,
       { 
-        familyInfo: {
-          ...info,
-          lastUpdated: new Date()
+        $set: {
+          'familyInfo': info,
+          'familyInfo.lastUpdated': new Date()
         }
       },
       { new: true }
@@ -200,26 +186,39 @@ export class SubmissionService {
     ).exec();
   }
 
-  async findByType(type: string): Promise<SubmissionDocument[]> {
-    return this.submissionModel
-      .find({ type, isDeleted: false })
-      .sort({ matchScore: -1 })
+  async findByType(type: SubmissionType): Promise<FormattedSubmission[]> {
+    const submissions = await this.submissionModel
+      .find({ type })
+      .sort({ submittedAt: -1 })
       .exec();
+    
+    return Promise.all(submissions.map(sub => this.formatSubmission(sub)));
   }
 
   async findBestMatches(
-    type: string,
-    limit = 10
-  ): Promise<SubmissionDocument[]> {
-    return this.submissionModel
-      .find({ 
-        type,
+    submissionId: string,
+    limit: number = 10
+  ): Promise<FormattedSubmission[]> {
+    const submission = await this.findById(submissionId);
+    if (!submission) {
+      throw new NotFoundException(`Submission with ID ${submissionId} not found`);
+    }
+
+    const oppositeType = submission.type === SubmissionType.FOUNDER
+      ? SubmissionType.INVESTOR
+      : SubmissionType.FOUNDER;
+
+    const matches = await this.submissionModel
+      .find({
+        type: oppositeType,
         isDeleted: false,
         status: SubmissionStatus.ACTIVE
       })
       .sort({ matchScore: -1 })
       .limit(limit)
       .exec();
+
+    return Promise.all(matches.map(match => this.formatSubmission(match)));
   }
 
   async cleanupDeletedSubmissions(daysToKeep = 30): Promise<number> {
