@@ -1,5 +1,4 @@
 import { Express, Request, Response, NextFunction, Router } from 'express';
-import express from 'express';
 
 declare global {
   namespace Express {
@@ -11,30 +10,28 @@ declare global {
 }
 
 declare module 'express' {
-  interface Request {
+  export interface Request {
     user?: any;
     userId?: string;
   }
-}
 
-declare module 'express-serve-static-core' {
-  interface Router {
+  export interface Response {
+    // Add any custom properties to the response object
+  }
+
+  export interface Router {
     get(path: string, ...handlers: any[]): this;
     post(path: string, ...handlers: any[]): this;
     put(path: string, ...handlers: any[]): this;
     delete(path: string, ...handlers: any[]): this;
   }
 
-  interface Application {
+  export interface Application {
     use: any;
     listen: any;
     static: any;
     json: any;
     urlencoded: any;
-  }
-
-  export interface Response {
-    // Add any custom properties to the response object
   }
 }
 
@@ -53,8 +50,8 @@ declare const express: {
   static: (root: string, options?: any) => any;
   json: (options?: any) => any;
   urlencoded: (options?: any) => any;
+  Router: typeof Router;
 };
 
 export = express;
-
 export { Express, Request, Response, NextFunction, Router }; 
