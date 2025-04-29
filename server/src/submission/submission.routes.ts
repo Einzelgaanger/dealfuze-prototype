@@ -6,7 +6,7 @@ import SubmissionModel from "../db/models/submission.schema";
 import LinkedinProfileModel from "../db/models/linkedinProfile.schema";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import { SubmissionStatus } from "../types/submission.type";
-import matchService from "../match/match.service";
+import { MatchService } from '../match/match.service';
 import FormModel from "../db/models/form.schema";
 import MatchCriteriaModel from "../db/models/matchCriteria.schema";
 import PipelineModel from "../db/models/pipeline.schema";
@@ -167,7 +167,7 @@ router.post(
     }
 
     if (submission.status === SubmissionStatus.FAILED) {
-      await matchService.matchSubmission(form, submission, matchCriteria);
+      await MatchService.matchSubmission(form, submission, matchCriteria);
     }
 
     return res.status(200).json({

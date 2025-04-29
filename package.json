@@ -12,7 +12,6 @@
     "typecheck": "concurrently \"npm run typecheck --workspace=server\" \"npm run typecheck --workspace=frontend\""
   },
   "dependencies": {
-    "@clerk/express": "^1.4.9",
     "@formio/core": "^2.4.0",
     "@nestjs/core": "^11.1.0",
     "@nestjs/platform-express": "^11.1.0",
@@ -22,11 +21,10 @@
     "concurrently": "^8.2.2",
     "country-state-city": "^3.2.1",
     "mongodb": "^6.16.0",
-    "mongoose": "^8.14.0",
-    "openai": "^4.96.0",
-    "rxjs": "^7.8.2"
+    "mongoose": "^8.14.0"
   },
   "devDependencies": {
+    "@clerk/express": "^1.4.9",
     "@nestjs/common": "^11.1.0",
     "@nestjs/config": "^4.0.2",
     "@nestjs/mongoose": "^11.0.3",
@@ -47,9 +45,11 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "node-cron": "^3.0.3",
+    "openai": "^4.96.0",
     "path": "^0.12.7",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
+    "rxjs": "^7.8.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "zod": "^3.24.3"

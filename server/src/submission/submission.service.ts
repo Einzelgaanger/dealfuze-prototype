@@ -14,7 +14,6 @@ import {
   requestLinkedInProfile,
 } from "../personality/personality.service";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
-import matchService from "../match/match.service";
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document, Types } from 'mongoose';
@@ -28,6 +27,7 @@ const FORM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 interface FormattedSubmission {
   id: string;
   formId: string;
+  type: SubmissionType;
   data: SubmissionDataType;
   submittedAt: Date;
   ipAddress?: string;
@@ -35,6 +35,8 @@ interface FormattedSubmission {
   name?: string;
   email?: string;
   status: SubmissionStatus;
+  isDeleted: boolean;
+  matchScore: number;
 }
 
 interface SubmissionQueryHelpers {
@@ -137,7 +139,7 @@ export class SubmissionService {
     return this.submissionModel.findById(id).exec();
   }
 
-  async findByType(type: SubmissionType): Promise<SubmissionDocument[]> {
+  async findByType(type: string): Promise<SubmissionDocument[]> {
     return this.submissionModel
       .find({ type, isDeleted: false })
       .sort({ matchScore: -1 })
@@ -145,7 +147,7 @@ export class SubmissionService {
   }
 
   async findBestMatches(
-    type: SubmissionType,
+    type: string,
     limit = 10
   ): Promise<SubmissionDocument[]> {
     return this.submissionModel
@@ -179,47 +181,13 @@ export class SubmissionService {
     data: SubmissionDataType,
     userAgent: string,
     ip: string
-  ): Promise<{ redirectUrl?: string; successMessage: string; submissionId?: string }> {
-    // Use cached form data if available
-    let form: FormDocument | null = null;
-    const cacheKey = `form-${formId}`;
-    
-    if (formCache.has(cacheKey)) {
-      form = formCache.get(cacheKey) || null;
-    } else {
-      // If not in cache, fetch from database
-      form = await FormModel.findById(formId).lean();
-      
-      // Cache the result with TTL
-      formCache.set(cacheKey, form);
-      setTimeout(() => {
-        formCache.delete(cacheKey);
-      }, FORM_CACHE_TTL);
-    }
+  ): Promise<{ successMessage: string; submissionId?: string }> {
+    const form = await this.submissionModel.findOne({ formId }).lean();
     
     if (!form) {
       return { successMessage: "Form not found" };
     }
 
-    // Extract name and email from form data for indexed lookup
-    let name = '';
-    let email = '';
-    
-    if (data) {
-      // Look for name field
-      if (data.name) {
-        name = data.name;
-      } else if (data.firstName && data.lastName) {
-        name = `${data.firstName} ${data.lastName}`;
-      }
-      
-      // Look for email field
-      if (data.email) {
-        email = data.email;
-      }
-    }
-
-    // Prepare submission document with all indexed fields
     const submissionToCreate = {
       formId: new Types.ObjectId(formId),
       data,
@@ -227,25 +195,24 @@ export class SubmissionService {
       ipAddress: ip,
       submittedAt: new Date(),
       status: SubmissionStatus.PENDING,
-      name, // Indexed field for faster lookups
-      email, // Indexed field for faster lookups
+      type: 'FORM' as SubmissionType,
+      isDeleted: false,
+      matchScore: 0
     };
 
-    // Use create operation with optimized write concern for better performance
-    const createdSubmission = await this.submissionModel.create(
-      [submissionToCreate],
-      { writeConcern: { w: 1, j: false } } // Write without journal sync for better performance
-    );
-
-    // Start processing the submission in background with automatic retry
-    this.processSubmissionAsync(createdSubmission[0]._id.toString())
-      .catch(err => console.error(`Error processing submission ${createdSubmission[0]._id}: ${err}`));
+    const createdSubmission = await this.submissionModel.create(submissionToCreate);
     
-    return {
-      redirectUrl: form.redirectUrl,
-      successMessage: "Submission created successfully",
-      submissionId: createdSubmission[0]._id.toString()
-    };
+    if (createdSubmission && createdSubmission._id) {
+      this.processSubmissionAsync(createdSubmission._id.toString())
+        .catch((err: Error) => console.error(`Error processing submission ${createdSubmission._id}: ${err}`));
+      
+      return {
+        successMessage: "Submission created successfully",
+        submissionId: createdSubmission._id.toString()
+      };
+    }
+
+    return { successMessage: "Failed to create submission" };
   }
 
   /**
@@ -254,14 +221,9 @@ export class SubmissionService {
    */
   private async processSubmissionAsync(submissionId: string, retryCount = 0): Promise<void> {
     try {
-      // Fetch the submission
       const submission = await this.submissionModel.findById(submissionId);
       if (!submission) return;
 
-      // Process submission - this could include matching, sending notifications, etc.
-      // Add any additional processing logic here
-
-      // Update status to completed
       await this.submissionModel.updateOne(
         { _id: submission._id },
         { $set: { status: SubmissionStatus.COMPLETED } }
@@ -269,21 +231,19 @@ export class SubmissionService {
     } catch (error) {
       console.error(`Error processing submission ${submissionId}:`, error);
       
-      // Implement exponential backoff for retries
       if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, retryCount) * 1000;
         console.log(`Retrying submission ${submissionId} in ${delay}ms (attempt ${retryCount + 1})`);
         
         setTimeout(() => {
           this.processSubmissionAsync(submissionId, retryCount + 1)
-            .catch(err => console.error(`Retry error for submission ${submissionId}:`, err));
+            .catch((err: Error) => console.error(`Retry error for submission ${submissionId}:`, err));
         }, delay);
       } else {
-        // Max retries reached, mark as failed
         await this.submissionModel.updateOne(
           { _id: new Types.ObjectId(submissionId) },
           { $set: { status: SubmissionStatus.FAILED } }
-        ).exec().catch(err => console.error(`Failed to update submission status for ${submissionId}:`, err));
+        ).exec().catch((err: Error) => console.error(`Failed to update submission status for ${submissionId}:`, err));
       }
     }
   }
@@ -309,18 +269,10 @@ export class SubmissionService {
     const limit = parseInt(limitQuery) || 20;
     const skip = (page - 1) * limit;
 
-    // Execute queries in parallel to reduce overall time
     const [total, submissions] = await Promise.all([
-      // Use countDocuments with specific index for better performance
-      this.submissionModel.countDocuments({ 
-        formId: new Types.ObjectId(formId) 
-      }).exec(),
-      
-      // Use lean() and projection to reduce memory usage and improve query performance
-      this.submissionModel.find({ 
-        formId: new Types.ObjectId(formId) 
-      })
-        .select('_id formId data submittedAt ipAddress userAgent name email status')
+      this.submissionModel.countDocuments({ formId: new Types.ObjectId(formId) }).exec(),
+      this.submissionModel.find({ formId: new Types.ObjectId(formId) })
+        .select('_id formId type data submittedAt ipAddress userAgent name email status isDeleted matchScore')
         .sort({ submittedAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -328,21 +280,21 @@ export class SubmissionService {
         .exec()
     ]);
 
-    // Map results to formatted output
-    const formattedSubmissions = submissions.map((sub: any) => ({
-      id: sub._id.toString(),
-      formId: sub.formId.toString(),
-      data: sub.data,
-      submittedAt: sub.submittedAt,
-      ipAddress: sub.ipAddress,
-      userAgent: sub.userAgent,
-      name: sub.name,
-      email: sub.email,
-      status: sub.status
-    }));
-
     return {
-      submissions: formattedSubmissions,
+      submissions: submissions.map(sub => ({
+        id: sub._id.toString(),
+        formId: sub.formId.toString(),
+        type: sub.type,
+        data: sub.data,
+        submittedAt: sub.submittedAt,
+        ipAddress: sub.ipAddress,
+        userAgent: sub.userAgent,
+        name: sub.name,
+        email: sub.email,
+        status: sub.status,
+        isDeleted: sub.isDeleted,
+        matchScore: sub.matchScore
+      })),
       total,
       page,
       limit
@@ -356,7 +308,7 @@ export class SubmissionService {
     return this.submissionModel.findOneAndUpdate(
       { _id: new Types.ObjectId(id) },
       { $set: { status } },
-      { new: true, lean: true }
+      { new: true }
     ).exec();
   }
 
@@ -366,14 +318,8 @@ export class SubmissionService {
   async deleteSubmissions(submissionIds: string[]): Promise<void> {
     if (!submissionIds.length) return;
     
-    // Convert string IDs to ObjectIds
     const objectIds = submissionIds.map(id => new Types.ObjectId(id));
-    
-    // Use deleteMany with write concern options for better performance
-    await this.submissionModel.deleteMany(
-      { _id: { $in: objectIds } },
-      { writeConcern: { w: 1, j: false } } // Faster writes
-    ).exec();
+    await this.submissionModel.deleteMany({ _id: { $in: objectIds } }).exec();
   }
 
   /**
@@ -386,7 +332,6 @@ export class SubmissionService {
     failed: number;
     recentSubmissionsPerDay: { date: string; count: number }[];
   }> {
-    // Use MongoDB aggregation pipeline for efficient stats calculation
     const stats = await this.submissionModel.aggregate([
       { $match: { formId: new Types.ObjectId(formId) } },
       { $group: {
@@ -396,13 +341,11 @@ export class SubmissionService {
       }
     ]).exec();
     
-    // Initialize counts
     let total = 0;
     let pending = 0;
     let completed = 0;
     let failed = 0;
     
-    // Process aggregation results
     stats.forEach((stat: { _id: string; count: number }) => {
       total += stat.count;
       
@@ -415,7 +358,6 @@ export class SubmissionService {
       }
     });
 
-    // Get recent submission trends (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
