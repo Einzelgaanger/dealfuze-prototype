@@ -7,6 +7,8 @@ declare module '@formio/core' {
     input: boolean;
     validate: any;
     defaultValue?: any;
+    multiple?: boolean;
+    values?: Array<{ label: string; value: string }>;
   }
 
   export class TextFieldComponent extends Component {
@@ -25,6 +27,7 @@ declare module '@formio/core' {
     valueProperty: string;
     multiple?: boolean;
     placeholder?: string;
+    values?: Array<{ label: string; value: string }>;
   }
 
   export class ButtonComponent extends Component {
@@ -96,4 +99,7 @@ declare module '@formio/core' {
     name?: string;
     path?: string;
   }
+
+  // Alias FormComponent for backward compatibility
+  export type FormComponent = Component;
 } 

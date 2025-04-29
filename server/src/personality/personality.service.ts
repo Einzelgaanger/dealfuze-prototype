@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { OpenAI } from 'openai';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
-import * as OpenAI from 'openai';
-import { ObjectId } from 'mongodb';
-import SubmissionModel from '../db/models/submission.schema';
+import { Submission as SubmissionModel } from '../submission/submission.schema';
 import FormModel from '../db/models/form.schema';
 import LinkedinProfileModel from '../db/models/linkedinProfile.schema';
 import { FormComponent } from '../types/formComponent.type';
@@ -15,18 +14,18 @@ import { LinkedinProfileStatus } from '../types/linkedinProfile.type';
 import { SubmissionStatus } from '../types/submission.type';
 import MatchCriteriaModel from '../db/models/matchCriteria.schema';
 
+type ObjectId = Types.ObjectId;
+
 @Injectable()
 export class PersonalityService {
-  // TODO: Fix OpenAI type issues - currently using 'any' as a workaround
-  // Need to investigate correct type usage with OpenAI v4
-  private readonly openai: any;
+  private readonly openai: OpenAI;
 
   constructor(
     @InjectModel(PersonalityModel.name) 
     private personalityModel: Model<IPersonality>,
     private matchService: MatchService
   ) {
-    this.openai = new OpenAI.OpenAI({
+    this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || ''
     });
   }
