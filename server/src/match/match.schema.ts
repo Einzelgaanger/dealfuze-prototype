@@ -8,6 +8,8 @@ export enum MatchStatus {
   ACCEPTED = 'accepted',
   REJECTED = 'rejected',
   EXPIRED = 'expired',
+  VIEWED = 'viewed',
+  ARCHIVED = 'archived'
 }
 
 export enum RejectionReason {
@@ -49,6 +51,12 @@ export class Match extends Document {
   @Prop({ type: Date })
   expiredAt?: Date;
 
+  @Prop({ type: Date })
+  viewedAt?: Date;
+
+  @Prop({ type: Date })
+  archivedAt?: Date;
+
   @Prop({ type: Object, required: true })
   matchCriteria: IMatchCriteria = {
     industry: 0,
@@ -67,6 +75,7 @@ export class Match extends Document {
   metadata: Record<string, any> = {};
 }
 
+export type MatchDocument = Match & Document;
 export const MatchSchema = SchemaFactory.createForClass(Match);
 
 // Create indexes for efficient querying

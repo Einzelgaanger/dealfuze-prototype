@@ -1,96 +1,84 @@
 import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Document } from 'mongoose';
 import { Match, MatchDocument, MatchStatus, RejectionReason } from './match.schema';
-
-// Define the type arguments for the Model
-type MatchModelType = Model<
-  MatchDocument,
-  {},
-  {},
-  {},
-  MatchDocument,
-  any,
-  {}
->;
 
 @Injectable()
 export class MatchService {
   private readonly logger = new Logger(MatchService.name);
 
   constructor(
-    @InjectModel(Match.name) private matchModel: MatchModelType
+    @InjectModel(Match.name) private matchModel: Model<MatchDocument, {}, {}, {}, MatchDocument & Document, {}, {}>
   ) {}
 
-  async create(createMatchDto: {
-    founderSubmissionId: string;
-    investorSubmissionId: string;
-    score: number;
-    matchDetails?: Record<string, any>;
-  }): Promise<MatchDocument> {
+  async create(match: Partial<Match>): Promise<MatchDocument> {
     try {
-      const createdMatch = new this.matchModel({
-        ...createMatchDto,
-        status: MatchStatus.PENDING,
-        createdAt: new Date(),
-      });
-      return await createdMatch.save();
-    } catch (error) {
-      this.logger.error(`Error creating match: ${error instanceof Error ? error.message : String(error)}`);
+      const createdMatch = new this.matchModel(match);
+      return createdMatch.save();
+    } catch (error: unknown) {
+      this.logger.error(`Error creating match: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
       throw new BadRequestException('Failed to create match');
     }
   }
 
-  async findAll(query: {
-    status?: MatchStatus;
-    founderSubmissionId?: string;
-    investorSubmissionId?: string;
-  }): Promise<MatchDocument[]> {
-    return this.matchModel.find(query);
+  async findAll(): Promise<MatchDocument[]> {
+    return this.matchModel.find().exec();
   }
 
-  async findById(id: string): Promise<MatchDocument> {
-    const match = await this.matchModel.findById(id);
-    if (!match) {
-      throw new NotFoundException(`Match with ID ${id} not found`);
-    }
-    return match;
+  async findById(id: string): Promise<MatchDocument | null> {
+    return this.matchModel.findById(id).exec();
   }
 
   async findByFounderSubmissionId(founderSubmissionId: string): Promise<MatchDocument[]> {
-    return this.matchModel.find({ founderSubmissionId });
+    return this.matchModel.find({ founderSubmissionId }).exec();
   }
 
   async findByInvestorSubmissionId(investorSubmissionId: string): Promise<MatchDocument[]> {
-    return this.matchModel.find({ investorSubmissionId });
+    return this.matchModel.find({ investorSubmissionId }).exec();
   }
 
-  async updateStatus(
-    id: string,
-    status: MatchStatus,
-    rejectionReason?: RejectionReason
-  ): Promise<MatchDocument> {
-    const match = await this.findById(id);
-    
-    const updateData: Partial<MatchDocument> = { status };
-    
-    // Set appropriate timestamp based on the new status
-    if (status === MatchStatus.ACCEPTED) {
-      updateData.acceptedAt = new Date();
-    } else if (status === MatchStatus.REJECTED) {
-      updateData.rejectedAt = new Date();
-      updateData.rejectionReason = rejectionReason;
-    } else if (status === MatchStatus.VIEWED) {
-      updateData.viewedAt = new Date();
-    } else if (status === MatchStatus.ARCHIVED) {
-      updateData.archivedAt = new Date();
+  async update(id: string, match: Partial<Match>): Promise<MatchDocument | null> {
+    const updatedMatch = await this.matchModel.findByIdAndUpdate(id, match, { new: true }).exec();
+    if (!updatedMatch) {
+      throw new NotFoundException(`Match with ID ${id} not found`);
     }
-    
-    return this.matchModel.findByIdAndUpdate(
+    return updatedMatch;
+  }
+
+  async delete(id: string): Promise<void> {
+    const result = await this.matchModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException(`Match with ID ${id} not found`);
+    }
+  }
+
+  async updateStatus(id: string, status: MatchStatus): Promise<MatchDocument | null> {
+    const updatedMatch = await this.matchModel.findByIdAndUpdate(
       id,
-      updateData,
+      { status },
       { new: true }
-    );
+    ).exec();
+    if (!updatedMatch) {
+      throw new NotFoundException(`Match with ID ${id} not found`);
+    }
+    return updatedMatch;
+  }
+
+  async rejectMatch(id: string, reason: RejectionReason, notes?: string): Promise<MatchDocument | null> {
+    const updatedMatch = await this.matchModel.findByIdAndUpdate(
+      id,
+      { 
+        status: MatchStatus.REJECTED,
+        rejectionReason: reason,
+        rejectionNotes: notes,
+        rejectedAt: new Date()
+      },
+      { new: true }
+    ).exec();
+    if (!updatedMatch) {
+      throw new NotFoundException(`Match with ID ${id} not found`);
+    }
+    return updatedMatch;
   }
 
   async batchProcessMatches(options: {

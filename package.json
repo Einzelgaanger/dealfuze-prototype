@@ -14,10 +14,7 @@
   "dependencies": {
     "@clerk/express": "^1.4.9",
     "@formio/core": "^2.4.0",
-    "@nestjs/common": "^11.1.0",
-    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.0",
-    "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-express": "^11.1.0",
     "@typegoose/typegoose": "^12.14.0",
     "class-transformer": "^0.5.1",
@@ -31,6 +28,9 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/mongoose": "^11.0.3",
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.1",
