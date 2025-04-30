@@ -7,9 +7,9 @@
   ],
   "scripts": {
     "dev": "nodemon",
-    "prebuild": "sh build.sh",
+    "prebuild": "npm install && cd server && npm install",
     "build": "cd server && npm run build",
-    "start": "node dist/main",
+    "start": "cd server && node dist/main",
     "typecheck": "concurrently \"npm run typecheck --workspace=server\" \"npm run typecheck --workspace=frontend\"",
     "test": "jest"
   },

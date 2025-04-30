@@ -1,13 +1,5 @@
 #!/bin/bash
 
-# Install dependencies
-echo "Installing dependencies..."
-npm install --save @nestjs/common @nestjs/mongoose @nestjs/config mongoose express express-validator cors helmet dotenv pino pino-http node-cron mongodb zod @clerk/express rxjs @formio/core country-state-city openai
-
-# Install dev dependencies
-echo "Installing dev dependencies..."
-npm install --save-dev @types/node @types/mongoose @types/express @types/express-validator @types/cors @types/helmet @types/dotenv @types/pino @types/pino-http @types/node-cron @types/mongodb tsconfig-paths
-
 # Fix any issues with the build
 echo "Fixing build issues..."
 cd server
