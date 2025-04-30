@@ -7,8 +7,8 @@
   ],
   "scripts": {
     "dev": "nodemon",
-    "prebuild": "powershell -ExecutionPolicy Bypass -File ./build.ps1",
-    "build": "sh build.sh",
+    "prebuild": "sh build.sh",
+    "build": "cd server && npm run build",
     "start": "node dist/main",
     "typecheck": "concurrently \"npm run typecheck --workspace=server\" \"npm run typecheck --workspace=frontend\"",
     "test": "jest"
