@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SubmissionModule } from './submission/submission.module';
 import { MatchModule } from './match/match.module';
+import { CronModule } from './cron/cron.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MatchModule } from './match/match.module';
     }),
     SubmissionModule,
     MatchModule,
+    CronModule,
   ],
 })
 export class AppModule {} 

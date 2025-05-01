@@ -1,12 +1,33 @@
 import LinkedinProfileModel from "../db/models/linkedinProfile.schema";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import { AppConfig } from "../config";
-import { personalityService } from "../personality/personality.service";
+import { PersonalityService } from "../personality/personality.service";
+import { MatchService } from "../match/match.service";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import PersonalityModel from "../db/models/personality.schema";
+import { Submission, SubmissionDocument } from "../submission/submission.schema";
 
 export async function brightDataCron() {
   const pendingProfiles = await LinkedinProfileModel.find({
     status: LinkedinProfileStatus.PENDING,
   });
+
+  const personalityService = new PersonalityService(
+    PersonalityModel,
+    Submission,
+    new MatchService()
+  );
+
+  for (const profile of pendingProfiles) {
+    try {
+      await personalityService.registerLinkedInProfileRetrieval(
+        profile._id
+      );
+    } catch (error) {
+      console.error(`Error processing profile ${profile._id}:`, error);
+    }
+  }
 
   console.log(`Found ${pendingProfiles.length} pending profiles`);
 
@@ -44,7 +65,7 @@ export async function brightDataCron() {
             },
           });
 
-          await personalityService.registerLinkedInProfileRetrieval(
+          await PersonalityService.registerLinkedInProfileRetrieval(
             profile._id
           );
         } else if (snapshotStatusData.status === "failed") {
