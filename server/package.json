@@ -5,13 +5,14 @@
   "main": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "engines": {
-    "node": ">=18.0.0 <19.0.0"
+    "node": "18.17.0",
+    "npm": "9.6.7"
   },
   "scripts": {
     "dev": "nodemon -w . -x tsx src/main.ts | pino-pretty",
     "start": "node -r tsconfig-paths/register dist/main.js",
-    "build": "tsc -p tsconfig.json && npm run postbuild",
-    "postbuild": "cp -r src/views dist/ && cp -r src/public dist/",
+    "build": "tsc -p tsconfig.json",
+    "postbuild": "mkdir -p dist/views dist/public && cp -r src/views/* dist/views/ 2>/dev/null || true && cp -r src/public/* dist/public/ 2>/dev/null || true",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },

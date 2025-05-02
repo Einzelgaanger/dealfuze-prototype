@@ -33,6 +33,11 @@ async function bootstrap() {
   // Use error handler
   app.use(errorHandler);
   
+  // Add health check endpoint
+  app.getHttpAdapter().get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+  
   // Get cron service
   const cronService = app.get(CronService);
   
