@@ -15,13 +15,13 @@ export async function brightDataCron() {
 
   // Create matchService with required dependencies
   const matchService = new MatchService(
-    Match.model as Model<MatchDocument>,
+    Match as Model<MatchDocument>,
     null // Pass null for submissionService as it's not used in this context
   );
 
   const personalityService = new PersonalityService(
     PersonalityModel,
-    Submission.model as Model<SubmissionDocument>,
+    Submission as Model<SubmissionDocument>,
     matchService
   );
 

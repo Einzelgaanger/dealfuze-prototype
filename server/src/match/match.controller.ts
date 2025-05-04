@@ -44,7 +44,7 @@ export class MatchController {
     investorSubmissionId?: string;
   }) {
     try {
-      return await this.matchService.findAll(query);
+      return await this.matchService.findAll(query, {}, {});
     } catch (error) {
       this.logger.error(`Failed to fetch matches: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to retrieve matches');
@@ -54,7 +54,7 @@ export class MatchController {
   @Get(':id')
   async getMatchById(@Param('id') id: string) {
     try {
-      return await this.matchService.findById(id);
+      return await this.matchService.findById(id, {}, {});
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -67,7 +67,7 @@ export class MatchController {
   @Get('founder/:founderSubmissionId')
   async getFounderMatches(@Param('founderSubmissionId') founderSubmissionId: string) {
     try {
-      return await this.matchService.findByFounderSubmissionId(founderSubmissionId);
+      return await this.matchService.findByFounderSubmissionId(founderSubmissionId, {}, {});
     } catch (error) {
       this.logger.error(`Failed to fetch founder matches: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to retrieve founder matches');
@@ -77,7 +77,7 @@ export class MatchController {
   @Get('investor/:investorSubmissionId')
   async getInvestorMatches(@Param('investorSubmissionId') investorSubmissionId: string) {
     try {
-      return await this.matchService.findByInvestorSubmissionId(investorSubmissionId);
+      return await this.matchService.findByInvestorSubmissionId(investorSubmissionId, {}, {});
     } catch (error) {
       this.logger.error(`Failed to fetch investor matches: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to retrieve investor matches');

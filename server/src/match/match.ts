@@ -11,7 +11,7 @@ import { matchPersonality } from "../utils/matchPersonality";
 import { FormComponent } from "../types/formComponent.type";
 import MatchModel from "../db/models/match.schema";
 import { MatchDocument } from "../types/match.type";
-import { MatchCriteria as MatchCriteriaType } from '../db/models/matchCriteria.schema';
+import MatchCriteria from '../db/models/matchCriteria.schema';
 
 // Cache for field lookups to reduce redundant searches
 const fieldLookupCache = new Map<string, FormComponent>();

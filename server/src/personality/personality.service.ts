@@ -27,7 +27,7 @@ export class PersonalityService {
     private submissionModel: Model<SubmissionDocument>,
     private matchService: MatchService
   ) {
-    this.openai = new OpenAI({
+    this.openai = OpenAI({
       apiKey: process.env.OPENAI_API_KEY || '',
       organization: process.env.OPENAI_ORG_ID || undefined,
     });
