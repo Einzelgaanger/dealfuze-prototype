@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "nodemon -w . -x tsx src/main.ts | pino-pretty",
-    "start": "node -r tsconfig-paths/register dist/main.js",
+    "start": "node dist/main.js",
     "build": "tsc -p tsconfig.json",
     "postbuild": "mkdir -p dist/views dist/public && cp -r src/views/* dist/views/ 2>/dev/null || true && cp -r src/public/* dist/public/ 2>/dev/null || true",
     "typecheck": "tsc --noEmit",
@@ -40,6 +40,7 @@
     "pino-pretty": "^10.3.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
+    "tsconfig-paths": "^4.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
