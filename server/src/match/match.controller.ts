@@ -30,7 +30,12 @@ export class MatchController {
     }
   ) {
     try {
-      return await this.matchService.create(createMatchDto);
+      return await this.matchService.create(
+        createMatchDto.founderSubmissionId,
+        createMatchDto.investorSubmissionId,
+        createMatchDto.score,
+        createMatchDto.matchDetails || {}
+      );
     } catch (error) {
       this.logger.error(`Failed to create match: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to create match');
@@ -44,7 +49,7 @@ export class MatchController {
     investorSubmissionId?: string;
   }) {
     try {
-      return await this.matchService.findAll(query);
+      return await this.matchService.findAll();
     } catch (error) {
       this.logger.error(`Failed to fetch matches: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to retrieve matches');

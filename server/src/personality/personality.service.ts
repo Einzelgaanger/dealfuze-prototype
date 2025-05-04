@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
@@ -30,7 +30,7 @@ export class PersonalityService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || '',
       organization: process.env.OPENAI_ORG_ID || undefined,
-    } as any);
+    });
   }
 
   private getLinkedInId(linkedinUrl: string): string | null {
