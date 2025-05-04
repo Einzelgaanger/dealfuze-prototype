@@ -115,32 +115,19 @@ export class MatchController {
   @Post('batch/process')
   async batchProcessMatches(
     @Body() options: {
-      startDate?: string;
-      endDate?: string;
-      minScore?: number;
-      limit?: number;
+      founderSubmissionId: string;
+      investorSubmissionIds: string[];
+      scores: number[];
+      criteria: Record<string, number>[];
     }
   ) {
     try {
-      const processOptions: any = {};
-      
-      if (options.startDate) {
-        processOptions.startDate = new Date(options.startDate);
-      }
-      
-      if (options.endDate) {
-        processOptions.endDate = new Date(options.endDate);
-      }
-      
-      if (options.minScore !== undefined) {
-        processOptions.minScore = +options.minScore;
-      }
-      
-      if (options.limit !== undefined) {
-        processOptions.limit = +options.limit;
-      }
-      
-      const result = await this.matchService.batchProcessMatches(processOptions);
+      const result = await this.matchService.batchProcessMatches(
+        options.founderSubmissionId,
+        options.investorSubmissionIds,
+        options.scores,
+        options.criteria
+      );
       return result;
     } catch (error) {
       this.logger.error(`Failed to batch process matches: ${error instanceof Error ? error.message : String(error)}`);
@@ -150,10 +137,18 @@ export class MatchController {
 
   @Post('recalculate')
   async recalculateMatches(
-    @Body() options: { batchSize?: number }
+    @Body() options: {
+      founderSubmissionId: string;
+      newScores: number[];
+      newCriteria: Record<string, number>[];
+    }
   ) {
     try {
-      const result = await this.matchService.recalculateMatches(options.batchSize);
+      const result = await this.matchService.recalculateMatches(
+        options.founderSubmissionId,
+        options.newScores,
+        options.newCriteria
+      );
       return result;
     } catch (error) {
       this.logger.error(`Failed to recalculate matches: ${error instanceof Error ? error.message : String(error)}`);
