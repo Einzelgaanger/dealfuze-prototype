@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Submission, SubmissionSchema } from './submission.schema';
 import { SubmissionService } from './submission.service';
@@ -8,7 +8,7 @@ import { MatchModule } from '../match/match.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Submission.name, schema: SubmissionSchema }]),
-    MatchModule
+    forwardRef(() => MatchModule)
   ],
   controllers: [SubmissionController],
   providers: [SubmissionService],

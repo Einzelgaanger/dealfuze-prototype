@@ -5,10 +5,10 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "build": "remix build",
-    "dev": "remix dev",
+    "build": "npx remix build",
+    "dev": "npx remix dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
-    "start": "remix-serve ./build/server/index.js",
+    "start": "npx remix-serve ./build/server/index.js",
     "typecheck": "tsc"
   },
   "engines": {
