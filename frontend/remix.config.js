@@ -1,7 +1,8 @@
 /** @type {import('@remix-run/dev').AppConfig} */
 export default {
   ignoredRouteFiles: ["**/.*"],
-  serverModuleFormat: "cjs",
+  serverModuleFormat: "esm",
+  serverBuildPath: "build/server/index.js",
   future: {
     v3_fetcherPersist: true,
     v3_lazyRouteDiscovery: true,
