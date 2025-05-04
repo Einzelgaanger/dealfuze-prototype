@@ -6,7 +6,7 @@ import {
 } from "../types/submission.type";
 import { FormDocument } from "../types/form.type";
 import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
@@ -49,6 +49,7 @@ export class SubmissionService {
   constructor(
     @InjectModel(Submission.name)
     private readonly submissionModel: Model<SubmissionDocument>,
+    @Inject(forwardRef(() => MatchService))
     private readonly matchService: MatchService,
     private readonly personalityService: PersonalityService
   ) {}
