@@ -17,7 +17,7 @@ import { PersonalityService } from '../personality/personality.service';
 const formCache = new Map<string, FormDocument | null>();
 const FORM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-interface FormattedSubmission {
+export interface FormattedSubmission {
   id: string;
   formId: string;
   type: SubmissionType;
@@ -400,5 +400,3 @@ export class SubmissionService {
     };
   }
 }
-
-export default SubmissionService;

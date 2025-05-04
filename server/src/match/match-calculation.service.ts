@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SubmissionDocument } from '../submission/submission.schema';
-import { MatchCriteria } from './match.schema';
+import { IMatchCriteria } from '../types/matchCriteria.type';
 
 // Updated interface to match the schema
 interface MatchCriteriaResult {
@@ -207,4 +207,4 @@ export class MatchCalculationService {
       return 0;
     }
   }
-} 
+}

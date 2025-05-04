@@ -27,7 +27,15 @@ export interface IForm {
 
 export interface FormDocument extends IForm, Document {}
 
-export interface FormRequest extends Omit<IForm, "createdAt" | "updatedAt"> {}
+export interface FormRequest {
+  _id?: ObjectId;
+  title: string;
+  name: string;
+  description: string;
+  components: FormComponent[];
+  settings?: Record<string, any>;
+  submitterType: FormType;  // Add submitterType property
+}
 
 export type FormUpdateRequest = {
   investorForm: FormRequest;

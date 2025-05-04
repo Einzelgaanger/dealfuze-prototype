@@ -1,10 +1,12 @@
-import { Request, Response } from "express";
-import { validationResult } from "express-validator";
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { SubmissionService } from './submission.service';
-import { SubmissionDocument, SubmissionStatus, ISubmission } from '../types/submission.type';
-import { JwtAuthGuard } from '../middleware/auth.middleware';
-import { Types } from 'mongoose';
+import { SubmissionService, FormattedSubmission } from './submission.service';
+import { SubmissionDocument, SubmissionStatus } from '../types/submission.type';
+
+interface SubmissionResponse {
+  redirectUrl?: string;
+  successMessage?: string;
+  submissionId: string;
+}
 
 @Controller('submission')
 export class SubmissionController {
@@ -18,35 +20,28 @@ export class SubmissionController {
     @Query('ip') ip: string
   ) {
     try {
-      const { redirectUrl, successMessage, submissionId } =
-        await this.submissionService.createSubmission(
-          formId,
-          data,
-          userAgent,
-          ip
-        );
+      const submission = await this.submissionService.createSubmission(
+        formId,
+        data,
+        userAgent,
+        ip
+      );
 
-      if (!submissionId) {
-        return {
-          success: false,
-          error: "Not found",
-          message: "Form not found",
-        };
-      }
+      const response: SubmissionResponse = {
+        submissionId: submission._id.toString()
+      };
 
       return {
         success: true,
-        message: successMessage,
-        redirect: redirectUrl || undefined,
-        submissionId,
+        message: 'Submission created successfully',
+        ...response
       };
     } catch (error) {
-      const err = error as Error;
-      console.error("Error submitting form:", err);
+      console.error("Error submitting form:", error);
       return {
         success: false,
         error: "Server error",
-        message: err.message,
+        message: error instanceof Error ? error.message : "Unknown error"
       };
     }
   }
@@ -56,21 +51,22 @@ export class SubmissionController {
     @Param('formId') formId: string,
     @Query('page') page: string,
     @Query('limit') limit: string
-  ) {
+  ): Promise<{
+    success: boolean;
+    data: FormattedSubmission[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  }> {
     try {
       const result = await this.submissionService.getFormSubmissions(
         formId,
         page,
         limit
       );
-
-      if (!result) {
-        return {
-          success: false,
-          error: "Not found",
-          message: "Form not found",
-        };
-      }
 
       return {
         success: true,
@@ -83,32 +79,62 @@ export class SubmissionController {
         },
       };
     } catch (error) {
-      const err = error as Error;
-      console.error("Error getting form submissions:", err);
-      return {
-        success: false,
-        error: "Server error",
-        message: err.message,
-      };
+      console.error("Error getting form submissions:", error);
+      throw error;
     }
   }
 
   @Get(':id')
-  async getSubmissionById(@Param('id') id: string): Promise<SubmissionDocument | null> {
-    return this.submissionService.getSubmissionById(id);
-  }
-
-  @Post()
-  async createSubmission(@Body() submission: Partial<ISubmission>): Promise<SubmissionDocument> {
-    return this.submissionService.createSubmission(submission);
+  async getSubmissionById(@Param('id') id: string) {
+    try {
+      const submission = await this.submissionService.getSubmissionById(id);
+      if (!submission) {
+        return {
+          success: false,
+          error: "Not found",
+          message: "Submission not found"
+        };
+      }
+      return {
+        success: true,
+        data: submission
+      };
+    } catch (error) {
+      console.error("Error getting submission:", error);
+      return {
+        success: false,
+        error: "Server error",
+        message: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
   }
 
   @Put(':id/status')
   async updateStatus(
     @Param('id') id: string,
     @Body('status') status: SubmissionStatus
-  ): Promise<SubmissionDocument | null> {
-    return this.submissionService.updateStatus(id, status);
+  ) {
+    try {
+      const submission = await this.submissionService.updateStatus(id, status);
+      if (!submission) {
+        return {
+          success: false,
+          error: "Not found",
+          message: "Submission not found"
+        };
+      }
+      return {
+        success: true,
+        data: submission
+      };
+    } catch (error) {
+      console.error("Error updating submission status:", error);
+      return {
+        success: false,
+        error: "Server error",
+        message: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
   }
 
   @Delete()

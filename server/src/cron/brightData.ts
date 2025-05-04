@@ -3,26 +3,33 @@ import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import { AppConfig } from "../config";
 import { PersonalityService } from "../personality/personality.service";
 import { MatchService } from "../match/match.service";
-import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import PersonalityModel from "../db/models/personality.schema";
 import { Submission, SubmissionDocument } from "../submission/submission.schema";
+import { Match, MatchDocument } from "../match/match.schema";
 
 export async function brightDataCron() {
   const pendingProfiles = await LinkedinProfileModel.find({
     status: LinkedinProfileStatus.PENDING,
   });
 
+  // Create matchService with required dependencies
+  const matchService = new MatchService(
+    Match as unknown as Model<MatchDocument>,
+    null // Pass null for submissionService as it's not used in this context
+  );
+
   const personalityService = new PersonalityService(
     PersonalityModel,
-    Submission,
-    new MatchService()
+    Submission as unknown as Model<SubmissionDocument>,
+    matchService
   );
 
   for (const profile of pendingProfiles) {
     try {
+      // Change static call to instance method
       await personalityService.registerLinkedInProfileRetrieval(
-        profile._id
+        profile._id.toString()
       );
     } catch (error) {
       console.error(`Error processing profile ${profile._id}:`, error);
@@ -65,8 +72,8 @@ export async function brightDataCron() {
             },
           });
 
-          await PersonalityService.registerLinkedInProfileRetrieval(
-            profile._id
+          await personalityService.registerLinkedInProfileRetrieval(
+            profile._id.toString()
           );
         } else if (snapshotStatusData.status === "failed") {
           await LinkedinProfileModel.findByIdAndUpdate(profile._id, {

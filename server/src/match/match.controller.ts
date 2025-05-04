@@ -26,11 +26,17 @@ export class MatchController {
       founderSubmissionId: string; 
       investorSubmissionId: string;
       score: number;
-      matchDetails?: Record<string, any>;
+      criteria: Record<string, number>;
     }
   ) {
     try {
-      return await this.matchService.create(createMatchDto);
+      const { founderSubmissionId, investorSubmissionId, score, criteria } = createMatchDto;
+      return await this.matchService.create(
+        founderSubmissionId,
+        investorSubmissionId,
+        score,
+        criteria
+      );
     } catch (error) {
       this.logger.error(`Failed to create match: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to create match');
@@ -38,13 +44,9 @@ export class MatchController {
   }
 
   @Get()
-  async getMatches(@Query() query: {
-    status?: MatchStatus;
-    founderSubmissionId?: string;
-    investorSubmissionId?: string;
-  }) {
+  async getMatches() {
     try {
-      return await this.matchService.findAll(query);
+      return await this.matchService.findAll();
     } catch (error) {
       this.logger.error(`Failed to fetch matches: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to retrieve matches');
@@ -110,32 +112,20 @@ export class MatchController {
   @Post('batch/process')
   async batchProcessMatches(
     @Body() options: {
-      startDate?: string;
-      endDate?: string;
-      minScore?: number;
-      limit?: number;
+      founderSubmissionId: string;
+      investorSubmissionIds: string[];
+      scores: number[];
+      criteria: Record<string, number>[];
     }
   ) {
     try {
-      const processOptions: any = {};
-      
-      if (options.startDate) {
-        processOptions.startDate = new Date(options.startDate);
-      }
-      
-      if (options.endDate) {
-        processOptions.endDate = new Date(options.endDate);
-      }
-      
-      if (options.minScore !== undefined) {
-        processOptions.minScore = +options.minScore;
-      }
-      
-      if (options.limit !== undefined) {
-        processOptions.limit = +options.limit;
-      }
-      
-      const result = await this.matchService.batchProcessMatches(processOptions);
+      const { founderSubmissionId, investorSubmissionIds, scores, criteria } = options;
+      const result = await this.matchService.batchProcessMatches(
+        founderSubmissionId,
+        investorSubmissionIds,
+        scores,
+        criteria
+      );
       return result;
     } catch (error) {
       this.logger.error(`Failed to batch process matches: ${error instanceof Error ? error.message : String(error)}`);
@@ -145,10 +135,19 @@ export class MatchController {
 
   @Post('recalculate')
   async recalculateMatches(
-    @Body() options: { batchSize?: number }
+    @Body() options: { 
+      founderSubmissionId: string;
+      newScores: number[];
+      newCriteria: Record<string, number>[];
+    }
   ) {
     try {
-      const result = await this.matchService.recalculateMatches(options.batchSize);
+      const { founderSubmissionId, newScores, newCriteria } = options;
+      const result = await this.matchService.recalculateMatches(
+        founderSubmissionId,
+        newScores,
+        newCriteria
+      );
       return result;
     } catch (error) {
       this.logger.error(`Failed to recalculate matches: ${error instanceof Error ? error.message : String(error)}`);
@@ -165,4 +164,4 @@ export class MatchController {
       throw new BadRequestException('Failed to generate match report');
     }
   }
-} 
+}

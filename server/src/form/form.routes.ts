@@ -1,51 +1,24 @@
-import express from "express";
-import formController from "./form.controller";
-import { formValidation } from "./form.validations";
-import { submissionsValidation, patchFormValidation } from "./form.validations";
+import { Router } from 'express';
+import { FormController } from "./form.controller";
+import { FormModule } from './form.module';
+import { NestFactory } from '@nestjs/core';
 
-const router = express.Router({ mergeParams: true });
+const router = Router();
+let formController: FormController;
 
-/**
- * @route   GET /api/forms/:pipelineId
- * @desc    Get a form by ID
- * @access  Public
- */
-router.get("/", formController.getFormsByPipelineId);
+// Initialize the controller
+async function initializeController() {
+  const app = await NestFactory.create(FormModule);
+  formController = app.get(FormController);
+}
 
-/**
- * @route   GET /api/forms/:formId
- * @desc    Get a form by ID
- * @access  Public
- */
-router.get("/:formId", formController.getFormById);
-
-/**
- * @route   PUT /api/forms/:id
- * @desc    Update a form by ID
- * @access  Public
- */
-router.put("/", formValidation, formController.updateForm);
-
-/**
- * @route   PATCH /api/forms/:pipelineId/:formId
- * @desc    Add form options to a form
- * @access  Public
- */
-router.patch(
-  "/:formId",
-  patchFormValidation,
-  formController.patchFormComponents
-);
-
-/**
- * @route   POST /api/forms/:formId/submit
- * @desc    Submit a form
- * @access  Public
- */
-router.post(
-  "/:formId/import",
-  submissionsValidation,
-  formController.importSubmissions
-);
+// Initialize routes after controller is ready
+initializeController().then(() => {
+  router.get('/pipeline/:pipelineId', (req, res) => formController.getFormsByPipelineId(req, res));
+  router.get('/:formId', (req, res) => formController.getFormById(req, res));
+  router.put('/pipeline/:pipelineId', (req, res) => formController.updateForm(req, res));
+  router.patch('/pipeline/:pipelineId/:formId/components', (req, res) => formController.patchFormComponents(req, res));
+  router.post('/:formId/import', (req, res) => formController.importSubmissions(req, res));
+}).catch(console.error);
 
 export default router;

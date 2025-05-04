@@ -7,21 +7,27 @@ import matchCriteriaRoutes from "../matchCriteria/matchCriteria.routes";
 const router = express.Router();
 
 // Base routes
-router.get("/", pipelineController.getPipelines);
-router.post("/", pipelineController.createPipeline);
+router.get("/", (req, res) => {
+  const getPipelines = req.app.locals.getPipelines || pipelineController.getPipelines;
+  return getPipelines(req, res);
+});
+router.post("/", pipelineController.createPipeline.bind(pipelineController));
 
 // Pipeline-specific routes
 router.get(
   "/:pipelineId",
   pipelineOwnershipMiddleware,
-  pipelineController.getPipelineById
+  (req, res) => {
+    const getPipelineById = req.app.locals.getPipelineById || pipelineController.getPipelineById;
+    return getPipelineById(req, res);
+  }
 );
 router.put(
   "/:pipelineId",
   pipelineOwnershipMiddleware,
-  pipelineController.updatePipeline
+  pipelineController.updatePipeline.bind(pipelineController)
 );
-router.delete("/:pipelineId", pipelineController.deletePipeline);
+router.delete("/:pipelineId", pipelineController.deletePipeline.bind(pipelineController));
 router.use("/:pipelineId/form", pipelineOwnershipMiddleware, formRoutes);
 router.use(
   "/:pipelineId/match-criteria",

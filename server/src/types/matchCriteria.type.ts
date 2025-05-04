@@ -40,6 +40,15 @@ export type AdvancedMatchCriteriaRequest = _AdvancedMatchCriteriaRequest[];
 interface MatchFieldDoc extends MatchField {
   id: ObjectId;
 }
-export interface MatchCriteriaDocument extends IMatchCriteria, Document {
-  matchCriteria: MatchFieldDoc[];
+
+export interface MatchCriteriaDocument {
+  pipelineId: ObjectId;
+  matchCriteria: {
+    founderField: string;
+    investorField: string;
+    required: boolean;
+    matchType: MatchType;
+  }[];
+  useLinkedinPersonality: boolean;
+  updatedAt?: Date;
 }
