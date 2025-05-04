@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-const OpenAI = require('openai');
+import { OpenAI } from 'openai';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
@@ -18,7 +18,7 @@ type ObjectId = Types.ObjectId;
 
 @Injectable()
 export class PersonalityService {
-  private readonly openai;
+  private readonly openai: OpenAI;
 
   constructor(
     @InjectModel(PersonalityModel.name) 
@@ -27,11 +27,10 @@ export class PersonalityService {
     private submissionModel: Model<SubmissionDocument>,
     private matchService: MatchService
   ) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OpenAI API key is not set');
-    }
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || '',
+      organization: process.env.OPENAI_ORG_ID || undefined,
+    });
   }
 
   private getLinkedInId(linkedinUrl: string): string | null {

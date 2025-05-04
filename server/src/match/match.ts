@@ -11,6 +11,7 @@ import { matchPersonality } from "../utils/matchPersonality";
 import { FormComponent } from "../types/formComponent.type";
 import MatchModel from "../db/models/match.schema";
 import { MatchDocument } from "../types/match.type";
+import { MatchCriteria as MatchCriteriaType } from '../db/models/matchCriteria.schema';
 
 // Cache for field lookups to reduce redundant searches
 const fieldLookupCache = new Map<string, FormComponent>();
@@ -45,55 +46,32 @@ type WeightedField = {
 /**
  * Basic matching algorithm - retained for backward compatibility
  */
-export function basicMatch(founderData: MatchData, investorData: MatchData, criteria: IMatchCriteria): number {
+export function basicMatch(founderData: MatchData, investorData: MatchData, criteria: MatchCriteriaType): number {
   let totalScore = 0;
   let possibleScore = 0;
   
-  // Calculate weighted scores for each criteria field
-  if (criteria.industry > 0) {
-    possibleScore += criteria.industry;
-    if (founderData.industry === investorData.industry) {
-      totalScore += criteria.industry;
-    }
-  }
-  
-  if (criteria.fundingStage > 0) {
-    possibleScore += criteria.fundingStage;
-    if (founderData.fundingStage === investorData.fundingStage) {
-      totalScore += criteria.fundingStage;
-    }
-  }
-
-  if (criteria.marketSize > 0) {
-    possibleScore += criteria.marketSize;
-    if (founderData.marketSize === investorData.marketSize) {
-      totalScore += criteria.marketSize;
-    }
-  }
-
-  if (criteria.investmentRange > 0) {
-    possibleScore += criteria.investmentRange;
-    if (founderData.investmentRange === investorData.investmentRange) {
-      totalScore += criteria.investmentRange;
-    }
-  }
-
-  if (criteria.location > 0) {
-    possibleScore += criteria.location;
-    if (founderData.location === investorData.location) {
-      totalScore += criteria.location;
-    }
-  }
-
-  if (criteria.personality > 0) {
-    possibleScore += criteria.personality;
-    if (founderData.personality === investorData.personality) {
-      totalScore += criteria.personality;
+  // Simple matching based on field comparison
+  if (criteria.fields) {
+    for (const field of criteria.fields) {
+      const founderValue = founderData[field.name];
+      const investorValue = investorData[field.name];
+      
+      // Skip if either value is missing
+      if (founderValue === undefined || investorValue === undefined) {
+        continue;
+      }
+      
+      possibleScore += field.weight || 1;
+      
+      // Basic equality check
+      if (founderValue === investorValue) {
+        totalScore += field.weight || 1;
+      }
     }
   }
   
   // Calculate percentage match
-  return possibleScore > 0 ? (totalScore / possibleScore) * 100 : 0;
+  return possibleScore > 0 ? totalScore / possibleScore : 0;
 }
 
 /**
@@ -320,7 +298,7 @@ function calculateWordOverlap(a: string, b: string): number {
   const intersection = new Set([...wordsA].filter(word => wordsB.has(word)));
   
   // Calculate Jaccard similarity
-  const union = new Set([...wordsA, [...wordsB]]);
+  const union = new Set([...wordsA, ...wordsB]);
   
   return union.size > 0 ? intersection.size / union.size : 0;
 }
