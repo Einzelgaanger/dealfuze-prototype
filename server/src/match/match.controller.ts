@@ -30,7 +30,7 @@ export class MatchController {
     }
   ) {
     try {
-      return await this.matchService.create(createMatchDto, {}, {}, {});
+      return await this.matchService.create(createMatchDto);
     } catch (error) {
       this.logger.error(`Failed to create match: ${error instanceof Error ? error.message : String(error)}`);
       throw new BadRequestException('Failed to create match');

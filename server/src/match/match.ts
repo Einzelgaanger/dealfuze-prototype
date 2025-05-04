@@ -50,25 +50,17 @@ export function basicMatch(founderData: MatchData, investorData: MatchData, crit
   let totalScore = 0;
   let possibleScore = 0;
   
-  // Simple matching based on field comparison
-  if (criteria.fields) {
-    for (const field of criteria.fields) {
-      const founderValue = founderData[field.name];
-      const investorValue = investorData[field.name];
-      
-      // Skip if either value is missing
-      if (founderValue === undefined || investorValue === undefined) {
-        continue;
-      }
-      
-      possibleScore += field.weight || 1;
-      
-      // Basic equality check
-      if (founderValue === investorValue) {
-        totalScore += field.weight || 1;
-      }
-    }
-  }
+  // Calculate total possible score
+  possibleScore = criteria.industry + criteria.fundingStage + criteria.marketSize + 
+                 criteria.investmentRange + criteria.location + criteria.personality;
+  
+  // Calculate actual score based on field matches
+  if (founderData.industry === investorData.industry) totalScore += criteria.industry;
+  if (founderData.fundingStage === investorData.fundingStage) totalScore += criteria.fundingStage;
+  if (founderData.marketSize === investorData.marketSize) totalScore += criteria.marketSize;
+  if (founderData.investmentRange === investorData.investmentRange) totalScore += criteria.investmentRange;
+  if (founderData.location === investorData.location) totalScore += criteria.location;
+  if (founderData.personality === investorData.personality) totalScore += criteria.personality;
   
   // Calculate percentage match
   return possibleScore > 0 ? totalScore / possibleScore : 0;

@@ -30,7 +30,7 @@ export class PersonalityService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || '',
       organization: process.env.OPENAI_ORG_ID || undefined,
-    });
+    } as any);
   }
 
   private getLinkedInId(linkedinUrl: string): string | null {
