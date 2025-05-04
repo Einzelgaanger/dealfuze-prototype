@@ -46,7 +46,7 @@ type WeightedField = {
 /**
  * Basic matching algorithm - retained for backward compatibility
  */
-export function basicMatch(founderData: MatchData, investorData: MatchData, criteria: MatchCriteriaType): number {
+export function basicMatch(founderData: MatchData, investorData: MatchData, criteria: IMatchCriteria): number {
   let totalScore = 0;
   let possibleScore = 0;
   
