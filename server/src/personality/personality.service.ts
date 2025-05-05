@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import OpenAI from 'openai';
-import type { OpenAI as OpenAIType } from 'openai';
+import { OpenAI } from 'openai';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
@@ -19,7 +18,7 @@ type ObjectId = Types.ObjectId;
 
 @Injectable()
 export class PersonalityService {
-  private readonly openai: OpenAIType;
+  private readonly openai: OpenAI;
 
   constructor(
     @InjectModel(PersonalityModel.name) 

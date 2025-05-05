@@ -3,6 +3,12 @@ import express from "express";
 import compression from "compression";
 import morgan from "morgan";
 import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+import { readFileSync } from "node:fs";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const build = JSON.parse(readFileSync(new URL("./build/index.js", import.meta.url), "utf-8"));
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,7 +21,7 @@ app.use(express.static("public"));
 app.all(
   "*",
   createRequestHandler({
-    build: require("./build"),
+    build,
     mode: process.env.NODE_ENV,
   })
 );
