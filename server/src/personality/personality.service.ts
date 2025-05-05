@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
