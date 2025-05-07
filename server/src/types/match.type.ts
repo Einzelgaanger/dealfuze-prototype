@@ -1,13 +1,12 @@
-import { Document, ObjectId } from "mongodb";
+import { Document, Types } from 'mongoose';
 
-export interface IMatch {
-  pipelineId: ObjectId;
-  investorId: ObjectId;
-  founderId: ObjectId;
-  totalMatchPercentage: number;
-  formMatchPercentage: number;
-  personalityMatchPercentage?: number;
-  formMatch: Map<string, number>; // map of match criteria id to match percentage
+export interface Match {
+  _id: Types.ObjectId;
+  founderId: Types.ObjectId;
+  investorId: Types.ObjectId;
+  score: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface MatchDocument extends IMatch, Document {}
+export interface MatchDocument extends Match, Document {}

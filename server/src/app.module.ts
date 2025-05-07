@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SubmissionModule } from './submission/submission.module';
 import { MatchModule } from './match/match.module';
 import { CronModule } from './cron/cron.module';
+import { MatchingModule } from './matching/matching.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CronModule } from './cron/cron.module';
     SubmissionModule,
     MatchModule,
     CronModule,
+    MatchingModule,
   ],
 })
 export class AppModule {} 

@@ -1,16 +1,18 @@
-import { model, Schema } from "mongoose";
-import { MatchDocument } from "../../types/match.type";
+import { Schema, model } from 'mongoose';
+import { MatchDocument } from '../../types/match.type';
 
 const matchSchema = new Schema<MatchDocument>({
-  pipelineId: { type: Schema.Types.ObjectId, ref: "Pipeline", required: true },
-  investorId: { type: Schema.Types.ObjectId, ref: "Investor", required: true },
-  founderId: { type: Schema.Types.ObjectId, ref: "Founder", required: true },
-  totalMatchPercentage: { type: Number, required: true },
-  formMatchPercentage: { type: Number, required: true },
-  personalityMatchPercentage: { type: Number, required: true },
-  formMatch: { type: Map, of: Number, required: true },
+  founderId: { type: Schema.Types.ObjectId, ref: 'Submission', required: true },
+  investorId: { type: Schema.Types.ObjectId, ref: 'Submission', required: true },
+  score: { type: Number, required: true, min: 0, max: 1 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
-const MatchModel = model<MatchDocument>("Match", matchSchema);
+// Update the updatedAt timestamp before saving
+matchSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
 
-export default MatchModel;
+export default model<MatchDocument>('Match', matchSchema);
