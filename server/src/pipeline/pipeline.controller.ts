@@ -2,38 +2,21 @@ import { Request, Response } from "express";
 import PipelineModel from "../db/models/pipeline.schema";
 import { PipelineService } from "./pipeline.service";
 import { ObjectId } from "mongodb";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Controller, Get, Post, Put, Delete, Param, Body, Req, Res } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { PipelineDocument } from "../types/pipeline.type";
 import { Model } from "mongoose";
-import { MatchCriteriaService } from "../matchCriteria/matchCriteria.service";
-import { FormService } from "../form/form.service";
-import MatchCriteriaModel from "../db/models/matchCriteria.schema";
-import FormModel from "../db/models/form.schema";
 
-@Injectable()
+@Controller('api/pipeline')
 export class PipelineController {
-  private pipelineService: PipelineService;
-
   constructor(
+    private readonly pipelineService: PipelineService,
     @InjectModel(PipelineModel.name)
     private pipelineModel: Model<PipelineDocument>
-  ) {
-    // Create mock models for the services
-    const mockMatchCriteriaModel = {} as Model<typeof MatchCriteriaModel>;
-    const matchCriteriaService = new MatchCriteriaService(mockMatchCriteriaModel);
-    
-    const mockFormModel = {} as Model<typeof FormModel>;
-    const formService = new FormService(mockFormModel, matchCriteriaService);
-    
-    this.pipelineService = new PipelineService(
-      this.pipelineModel,
-      matchCriteriaService,
-      formService
-    );
-  }
+  ) {}
 
-  async getPipelines(req: Request, res: Response) {
+  @Get()
+  async getPipelines(@Req() req: Request, @Res() res: Response) {
     try {
       const userId = req.userId;
       const pipelines = await PipelineModel.find({ userId });
@@ -54,7 +37,8 @@ export class PipelineController {
     }
   }
 
-  async getPipelineById(req: Request, res: Response) {
+  @Get(':pipelineId')
+  async getPipelineById(@Req() req: Request, @Res() res: Response) {
     try {
       const { pipelineId } = req.params;
       const userId = req.userId;
@@ -86,7 +70,8 @@ export class PipelineController {
     }
   }
 
-  async createPipeline(req: Request, res: Response) {
+  @Post()
+  async createPipeline(@Req() req: Request, @Res() res: Response) {
     try {
       const { userId, pipelineName, description } = req.body;
 
@@ -106,7 +91,8 @@ export class PipelineController {
     }
   }
 
-  async updatePipeline(req: Request, res: Response) {
+  @Put(':pipelineId')
+  async updatePipeline(@Req() req: Request, @Res() res: Response) {
     try {
       const { pipelineId } = req.params;
       const updates = req.body;
@@ -127,7 +113,8 @@ export class PipelineController {
     }
   }
 
-  async deletePipeline(req: Request, res: Response) {
+  @Delete(':pipelineId')
+  async deletePipeline(@Req() req: Request, @Res() res: Response) {
     try {
       const { pipelineId } = req.params;
 
@@ -144,7 +131,3 @@ export class PipelineController {
   }
 }
 
-// Create an instance of PipelineController with the PipelineModel
-const pipelineController = new PipelineController(PipelineModel);
-
-export default pipelineController;

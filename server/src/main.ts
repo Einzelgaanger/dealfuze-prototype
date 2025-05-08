@@ -21,8 +21,12 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS
-  app.enableCors();
+  // Enable CORS with specific options
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
   
   // Use helmet for security
   app.use(helmet());
@@ -38,6 +42,14 @@ async function bootstrap() {
     res.status(200).json({ status: 'ok' });
   });
   
+  // Add API prefix to all routes
+  app.setGlobalPrefix('api');
+  
+  // Add fallback route for pipeline endpoint
+  app.getHttpAdapter().get('/api/pipeline', (req, res) => {
+    res.status(200).json({ message: 'Pipeline API is available' });
+  });
+  
   // Get cron service
   const cronService = app.get(CronService);
   
@@ -51,7 +63,7 @@ async function bootstrap() {
   });
   
   // Start the application
-  const port = process.env.API_PORT || 4000;
+  const port = process.env.API_PORT || 4001;
   await app.listen(port);
   logger.info(`Application is running on: ${port}`);
 }

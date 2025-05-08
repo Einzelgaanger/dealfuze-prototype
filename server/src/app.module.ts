@@ -5,6 +5,10 @@ import { SubmissionModule } from './submission/submission.module';
 import { MatchModule } from './match/match.module';
 import { CronModule } from './cron/cron.module';
 import { MatchingModule } from './matching/matching.module';
+import { PersonalityModule } from './personality/personality.module';
+import { IndustryFamilyModule } from './services/industryFamily.module';
+import { CharacterTraitModule } from './services/characterTrait.module';
+import { PipelineModule } from './pipeline/pipeline.module';
 
 @Module({
   imports: [
@@ -22,6 +26,10 @@ import { MatchingModule } from './matching/matching.module';
     MatchModule,
     CronModule,
     MatchingModule,
+    PersonalityModule,
+    IndustryFamilyModule,
+    CharacterTraitModule,
+    PipelineModule,
   ],
 })
-export class AppModule {} 
+export class AppModule {}

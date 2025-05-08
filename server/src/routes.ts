@@ -1,6 +1,10 @@
+/**
+ * This file is kept for reference but is being migrated to NestJS controllers.
+ * Some routes are still using Express routers while others have been migrated to NestJS controllers.
+ */
+
 import express from "express";
 import { authMiddleware } from "./middleware/auth.middleware";
-import pipelineRoutes from "./pipeline/pipeline.routes";
 import submissionRoutes from "./submission/submission.routes";
 import formRoutes from "./form/form.routes";
 import { handleBrightDataWebhook } from "./webhook/brightData";
@@ -14,8 +18,7 @@ router.post("/webhook/brightdata", async (req, res) => {
 // Public routes
 router.use(authMiddleware, submissionRoutes);
 
-// Protected routes
-router.use("/pipeline", authMiddleware, pipelineRoutes);
+// Protected routes - Pipeline routes are now handled by NestJS controllers
 
 router.use("/forms", authMiddleware, formRoutes);
 
