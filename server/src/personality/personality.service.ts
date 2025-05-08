@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { OpenAI } from 'openai';
+import { Configuration, OpenAIApi } from 'openai/dist';
 import PersonalityModel from '../db/models/personality.schema';
 import { MatchService } from '../match/match.service';
 import { IPersonality } from '../types/personality.type';
@@ -13,12 +13,13 @@ import { AppConfig } from '../config';
 import { LinkedinProfileStatus } from '../types/linkedinProfile.type';
 import { SubmissionStatus } from '../types/submission.type';
 import MatchCriteriaModel from '../db/models/matchCriteria.schema';
+import CharacterTraitModel from '../db/models/characterTrait.schema';
 
 type ObjectId = Types.ObjectId;
 
 @Injectable()
 export class PersonalityService {
-  private readonly openai: OpenAI;
+  private readonly openai: OpenAIApi;
 
   constructor(
     @InjectModel(PersonalityModel.name) 
@@ -27,10 +28,10 @@ export class PersonalityService {
     private submissionModel: Model<SubmissionDocument>,
     private matchService: MatchService
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || '',
-      organization: process.env.OPENAI_ORG_ID || undefined,
+    const configuration = new Configuration({
+      apiKey: AppConfig.OPEN_AI_API_KEY,
     });
+    this.openai = new OpenAIApi(configuration);
   }
 
   private getLinkedInId(linkedinUrl: string): string | null {
@@ -120,47 +121,60 @@ export class PersonalityService {
       throw new Error('Form not found');
     }
 
-    const formId = form._id;
+    // Extract personality-related responses
+    const personalityResponses = personalityFields.map(field => ({
+      question: field.label,
+      answer: submission.data[field.key]
+    }));
 
-    const completion = await this.openai.chat.completions.create({
+    // Use OpenAI to analyze responses and suggest character traits
+    const completion = await this.openai.createCompletion({
       model: "gpt-4",
-      messages: [
+      prompt: JSON.stringify([
         {
           role: "system",
-          content: "You are a personality analyzer. Analyze the following responses and generate a personality profile."
+          content: "You are a personality analyzer. Analyze the following responses and suggest character traits that best describe the person. Return the traits as a JSON array of strings."
         },
         {
           role: "user",
-          content: JSON.stringify(personalityFields)
+          content: JSON.stringify(personalityResponses)
         }
-      ]
+      ]),
+      max_tokens: 1000,
+      temperature: 0.7
     });
 
-    const personalityContent = completion.choices[0].message.content || '';
+    const suggestedTraits = JSON.parse(completion.data.choices[0].text || '[]');
 
-    let currentPersonality = await this.personalityModel.findOne({ submissionId });
+    // Find matching character traits in the database
+    const matchingTraits = await CharacterTraitModel.find({
+      name: { $in: suggestedTraits }
+    });
 
-    if (currentPersonality) {
-      currentPersonality = await this.personalityModel.findOneAndUpdate(
+    // Create or update personality document
+    let personality = await this.personalityModel.findOne({ submissionId });
+
+    if (personality) {
+      personality = await this.personalityModel.findOneAndUpdate(
         { submissionId },
         {
           $set: {
-            content: personalityContent,
-            formId,
+            traits: matchingTraits.map(trait => trait._id),
+            formId: form._id,
             updatedAt: new Date()
           }
         },
         { new: true }
       );
     } else {
-      currentPersonality = await this.personalityModel.create({
-        content: personalityContent,
-        formId,
+      personality = await this.personalityModel.create({
+        traits: matchingTraits.map(trait => trait._id),
+        formId: form._id,
         submissionId
       });
     }
 
-    return currentPersonality;
+    return personality;
   }
 
   async registerLinkedInProfileRetrieval(linkedInProfileId: string | Types.ObjectId) {
@@ -246,23 +260,32 @@ export class PersonalityService {
     }
   }
 
-  async analyzePersonality(content: string): Promise<string | null> {
+  async analyzePersonality(content: string): Promise<string[]> {
     try {
-      const completion = await this.openai.chat.completions.create({
+      const completion = await this.openai.createCompletion({
         model: 'gpt-4',
-        messages: [
+        prompt: JSON.stringify([
           {
             role: 'system',
-            content: 'You are a personality analyzer. Analyze the given text and provide insights about the person\'s personality traits.',
+            content: 'You are a personality analyzer. Analyze the given text and suggest character traits that best describe the person. Return the traits as a JSON array of strings.',
           },
           {
             role: 'user',
             content,
           },
-        ],
+        ]),
+        max_tokens: 1000,
+        temperature: 0.7
       });
 
-      return completion.choices[0].message.content;
+      const suggestedTraits = JSON.parse(completion.data.choices[0].text || '[]');
+      
+      // Find matching character traits in the database
+      const matchingTraits = await CharacterTraitModel.find({
+        name: { $in: suggestedTraits }
+      });
+
+      return matchingTraits.map(trait => trait.name);
     } catch (error) {
       console.error('Error analyzing personality:', error);
       throw error;
