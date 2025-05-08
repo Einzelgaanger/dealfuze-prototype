@@ -5,29 +5,33 @@ import { PersonalityService } from "../personality/personality.service";
 import { MatchService } from "../match/match.service";
 import { Model } from "mongoose";
 import PersonalityModel from "../db/models/personality.schema";
-import { Submission, SubmissionDocument } from "../submission/submission.schema";
-import { Match, MatchDocument } from "../match/match.schema";
+import { Submission } from "../types/submission.type";
+import { Match } from "../types/match.type";
+import { getModelToken } from '@nestjs/mongoose';
 
 export async function brightDataCron() {
   const pendingProfiles = await LinkedinProfileModel.find({
     status: LinkedinProfileStatus.PENDING,
   });
 
-  // Create matchService with required dependencies
+  // Get models through NestJS's dependency injection
+  const matchModel = getModelToken('Match') as unknown as Model<Match>;
+  const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
+
+  // Create services with required dependencies
   const matchService = new MatchService(
-    Match as Model<MatchDocument>,
+    matchModel,
     null // Pass null for submissionService as it's not used in this context
   );
 
   const personalityService = new PersonalityService(
     PersonalityModel,
-    Submission as Model<SubmissionDocument>,
+    submissionModel,
     matchService
   );
 
   for (const profile of pendingProfiles) {
     try {
-      // Change static call to instance method
       await personalityService.registerLinkedInProfileRetrieval(
         profile._id.toString()
       );

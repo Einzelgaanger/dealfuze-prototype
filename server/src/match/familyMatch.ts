@@ -258,7 +258,7 @@ export class ProfileMatcher {
   }
 
   private extractIndustries(profile: SubmissionDocument): string[] {
-    const industries = profile.data.industries;
+    const industries = profile.data.get('industries');
     if (!industries) return [];
     
     return Array.isArray(industries) ? industries : [industries];

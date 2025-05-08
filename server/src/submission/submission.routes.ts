@@ -16,6 +16,8 @@ import { SubmissionService } from './submission.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Submission } from './submission.schema';
 import { Model } from 'mongoose';
+import { FormService } from '../form/form.service';
+import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
 
 const router = Router();
 
@@ -23,15 +25,22 @@ const router = Router();
 const submissionModel = getModelToken(Submission.name);
 const matchModel = getModelToken('Match') as unknown as Model<any>;
 const personalityModel = getModelToken('Personality') as unknown as Model<any>;
+const formModel = getModelToken('Form') as unknown as Model<any>;
+const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<any>;
 
 // Initialize services in the correct order
+const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel);
+const formService = new FormService(formModel, matchCriteriaService);
+
+const submissionService = new SubmissionService(
+  submissionModel as unknown as Model<Submission>,
+  null as any,
+  null as any
+);
+
 const matchService = new MatchService(
   matchModel,
-  new SubmissionService(
-    submissionModel as unknown as Model<Submission>,
-    null as any,
-    null as any
-  )
+  submissionService
 );
 
 const personalityService = new PersonalityService(
@@ -40,11 +49,9 @@ const personalityService = new PersonalityService(
   matchService
 );
 
-const submissionService = new SubmissionService(
-  submissionModel as unknown as Model<Submission>,
-  matchService,
-  personalityService
-);
+// Update submission service with proper dependencies
+submissionService.matchService = matchService;
+submissionService.personalityService = personalityService;
 
 const controller = new SubmissionController(submissionService);
 

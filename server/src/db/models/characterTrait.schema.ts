@@ -28,5 +28,7 @@ characterTraitSchema.pre('save', function(next) {
   next();
 });
 
-export const CharacterTraitSchool = model<CharacterTraitSchoolDocument>('CharacterTraitSchool', characterTraitSchoolSchema);
-export const CharacterTrait = model<CharacterTraitDocument>('CharacterTrait', characterTraitSchema); 
+const CharacterTraitSchool = model<CharacterTraitSchoolDocument>('CharacterTraitSchool', characterTraitSchoolSchema);
+const CharacterTrait = model<CharacterTraitDocument>('CharacterTrait', characterTraitSchema);
+
+export { CharacterTraitSchool, CharacterTrait }; 

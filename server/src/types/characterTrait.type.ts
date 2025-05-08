@@ -8,7 +8,7 @@ export interface CharacterTraitSchool {
   updatedAt: Date;
 }
 
-export interface CharacterTraitSchoolDocument extends CharacterTraitSchool, Document {}
+export interface CharacterTraitSchoolDocument extends Omit<CharacterTraitSchool, '_id'>, Document {}
 
 export interface CharacterTrait {
   _id: Types.ObjectId;
@@ -21,7 +21,7 @@ export interface CharacterTrait {
   updatedAt: Date;
 }
 
-export interface CharacterTraitDocument extends CharacterTrait, Document {}
+export interface CharacterTraitDocument extends Omit<CharacterTrait, '_id'>, Document {}
 
 export interface CharacterTraitIndex {
   _id: Types.ObjectId;
@@ -31,7 +31,7 @@ export interface CharacterTraitIndex {
   updatedAt: Date;
 }
 
-export interface CharacterTraitIndexDocument extends CharacterTraitIndex, Document {}
+export interface CharacterTraitIndexDocument extends Omit<CharacterTraitIndex, '_id'>, Document {}
 
 export interface CharacterTraitRelationship {
   _id: Types.ObjectId;
@@ -42,4 +42,4 @@ export interface CharacterTraitRelationship {
   updatedAt: Date;
 }
 
-export interface CharacterTraitRelationshipDocument extends CharacterTraitRelationship, Document {} 
+export interface CharacterTraitRelationshipDocument extends Omit<CharacterTraitRelationship, '_id'>, Document {} 
