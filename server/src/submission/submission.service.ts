@@ -212,7 +212,7 @@ export class SubmissionService {
       .find({
         type: oppositeType,
         isDeleted: false,
-        status: SubmissionStatus.ACTIVE
+        status: SubmissionStatus.COMPLETED
       })
       .sort({ matchScore: -1 })
       .limit(limit)
@@ -303,7 +303,7 @@ export class SubmissionService {
         id: sub._id.toString(),
         formId: sub.formId.toString(),
         type: sub.type,
-        data: sub.data,
+        data: new Map(Object.entries(sub.data || {})),
         submittedAt: sub.submittedAt,
         ipAddress: sub.ipAddress,
         userAgent: sub.userAgent,

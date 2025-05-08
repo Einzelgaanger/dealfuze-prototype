@@ -4,13 +4,15 @@ import { AppConfig } from "../config";
 import { PersonalityService } from "../personality/personality.service";
 import { MatchService } from "../match/match.service";
 import { Model } from "mongoose";
-import PersonalityModel from "../db/models/personality.schema";
 import { Submission } from "../types/submission.type";
 import { Match } from "../types/match.type";
 import { getModelToken } from '@nestjs/mongoose';
 import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
 import { FormService } from '../form/form.service';
 import { SubmissionService } from '../submission/submission.service';
+import { IForm } from '../types/form.type';
+import { IPersonality } from '../types/personality.type';
+import { IMatchCriteria } from '../types/matchCriteria.type';
 
 export async function brightDataCron() {
   const pendingProfiles = await LinkedinProfileModel.find({
@@ -20,9 +22,9 @@ export async function brightDataCron() {
   // Get models through NestJS's dependency injection
   const matchModel = getModelToken('Match') as unknown as Model<Match>;
   const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
-  const personalityModel = getModelToken('Personality') as unknown as Model<any>;
-  const formModel = getModelToken('Form') as unknown as Model<any>;
-  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<any>;
+  const personalityModel = getModelToken('Personality') as unknown as Model<IPersonality>;
+  const formModel = getModelToken('Form') as unknown as Model<IForm>;
+  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<IMatchCriteria>;
 
   // Initialize services in the correct order
   const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel);
@@ -35,7 +37,7 @@ export async function brightDataCron() {
   );
 
   const matchService = new MatchService(
-    matchModel,
+    formModel,
     personalityModel,
     submissionModel,
     matchModel,

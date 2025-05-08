@@ -1,8 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import {
-  CharacterTrait,
   CharacterTraitDocument,
-  CharacterTraitSchool,
   CharacterTraitSchoolDocument,
 } from "../../types/characterTrait.type";
 
@@ -41,12 +39,14 @@ characterTraitSchema.pre("save", function (next) {
   next();
 });
 
-export const CharacterTraitSchool = mongoose.model<CharacterTraitSchoolDocument>(
+const CharacterTraitSchool = mongoose.model<CharacterTraitSchoolDocument>(
   "CharacterTraitSchool",
   characterTraitSchoolSchema
 );
 
-export const CharacterTrait = mongoose.model<CharacterTraitDocument>(
+const CharacterTrait = mongoose.model<CharacterTraitDocument>(
   "CharacterTrait",
   characterTraitSchema
-); 
+);
+
+export { CharacterTraitSchool, CharacterTrait }; 
