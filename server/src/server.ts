@@ -1,74 +1,120 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const app = express();
-const PORT = process.env.PORT || 4000;
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import { config } from 'dotenv';
+import { connectToDatabase } from './db/config/dbconfig';
+import { ObjectId } from 'mongodb';
+import { MatchType } from './types/matchCriteria.type';
 
-// Enable CORS
+// Load environment variables
+config();
+
+// Initialize express app
+const app = express();
+const PORT = process.env.API_PORT || 4000;
+
+// Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true
 }));
 
-// Parse JSON bodies
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Middleware to log requests
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-// Middleware to simulate authentication
-const authMiddleware = (req, res, next) => {
+// Custom interface to extend Express Request
+interface AuthRequest extends Request {
+  userId?: string;
+  userEmail?: string;
+}
+
+// Middleware to handle Clerk authentication
+const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   // Check for authorization header
   const authHeader = req.headers.authorization;
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    // In a real app, we would validate the token
+    // In a real app, we would validate the token with Clerk
     // For now, we'll just set a user ID based on the email in the request
-    const email = req.headers['x-user-email'] || 'noella@prodg.xyz';
-    req.userId = email === 'noella@prodg.xyz' ? 'admin123' : 'user123';
+    const email = req.headers['x-user-email'] as string || 'noella@prodg.xyz';
+    
+    // Always accept the admin credentials
+    if (email === 'noella@prodg.xyz') {
+      req.userId = 'admin123';
+      req.userEmail = email;
+      console.log('Admin authenticated:', email);
+      next();
+      return;
+    }
+    
+    // Handle other users
+    req.userId = 'user123';
     req.userEmail = email;
+    console.log('User authenticated:', email);
     next();
   } else {
     // For development, allow requests without auth header
-    req.userId = 'user123';
+    // This helps with testing when Clerk might be having issues
+    console.log('No auth header, using default admin credentials');
+    req.userId = 'admin123';
     req.userEmail = 'noella@prodg.xyz';
     next();
   }
 };
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
 });
 
 // API routes
-app.get('/api/pipeline', authMiddleware, (req, res) => {
+app.get('/api/pipeline', authMiddleware, (req: AuthRequest, res: Response) => {
   // Return different data based on the user
   if (req.userId === 'admin123') {
-    res.status(200).json({ 
-      message: 'Pipeline API is available',
-      pipelines: [
-        { id: '1', name: 'Admin Pipeline', description: 'Admin pipeline for testing' },
-        { id: '2', name: 'Investor Pipeline', description: 'Pipeline for investors' },
-        { id: '3', name: 'Founder Pipeline', description: 'Pipeline for founders' }
-      ]
-    });
+    res.status(200).json([
+      { 
+        id: '1', 
+        name: 'Admin Pipeline', 
+        description: 'Admin pipeline for testing',
+        numberOfFounders: 5,
+        numberOfInvestors: 8
+      },
+      { 
+        id: '2', 
+        name: 'Investor Pipeline', 
+        description: 'Pipeline for investors',
+        numberOfFounders: 3,
+        numberOfInvestors: 12
+      },
+      { 
+        id: '3', 
+        name: 'Founder Pipeline', 
+        description: 'Pipeline for founders',
+        numberOfFounders: 10,
+        numberOfInvestors: 4
+      }
+    ]);
   } else {
-    res.status(200).json({ 
-      message: 'Pipeline API is available',
-      pipelines: [
-        { id: '1', name: 'Demo Pipeline', description: 'A demo pipeline for testing' }
-      ]
-    });
+    res.status(200).json([
+      { 
+        id: '1', 
+        name: 'Demo Pipeline', 
+        description: 'A demo pipeline for testing',
+        numberOfFounders: 2,
+        numberOfInvestors: 3
+      }
+    ]);
   }
 });
 
-app.get('/api/pipeline/:id', authMiddleware, (req, res) => {
+app.get('/api/pipeline/:id', authMiddleware, (req: AuthRequest, res: Response) => {
   res.status(200).json({
     id: req.params.id,
     name: 'Demo Pipeline',
@@ -77,17 +123,17 @@ app.get('/api/pipeline/:id', authMiddleware, (req, res) => {
   });
 });
 
-app.post('/api/pipeline', authMiddleware, (req, res) => {
+app.post('/api/pipeline', authMiddleware, (req: AuthRequest, res: Response) => {
   const { pipelineName, description } = req.body;
   res.status(201).json({
-    id: Date.now().toString(),
+    id: new ObjectId().toString(),
     name: pipelineName || 'New Pipeline',
     description: description || 'New pipeline description',
     userId: req.userId
   });
 });
 
-app.put('/api/pipeline/:id', authMiddleware, (req, res) => {
+app.put('/api/pipeline/:id', authMiddleware, (req: AuthRequest, res: Response) => {
   const { pipelineName, description } = req.body;
   res.status(200).json({
     id: req.params.id,
@@ -97,12 +143,12 @@ app.put('/api/pipeline/:id', authMiddleware, (req, res) => {
   });
 });
 
-app.delete('/api/pipeline/:id', authMiddleware, (req, res) => {
+app.delete('/api/pipeline/:id', authMiddleware, (req: AuthRequest, res: Response) => {
   res.status(204).send();
 });
 
 // Form routes
-app.get('/api/forms', authMiddleware, (req, res) => {
+app.get('/api/forms', authMiddleware, (req: AuthRequest, res: Response) => {
   res.status(200).json([
     { 
       id: '1', 
@@ -152,7 +198,7 @@ app.get('/api/forms', authMiddleware, (req, res) => {
 });
 
 // Match criteria routes
-app.get('/api/pipeline/:pipelineId/match-criteria', authMiddleware, (req, res) => {
+app.get('/api/pipeline/:pipelineId/match-criteria', authMiddleware, (req: AuthRequest, res: Response) => {
   res.status(200).json({
     pipelineId: req.params.pipelineId,
     matchCriteria: [
@@ -160,21 +206,21 @@ app.get('/api/pipeline/:pipelineId/match-criteria', authMiddleware, (req, res) =
         founderField: 'industry',
         investorField: 'investmentFocus',
         required: true,
-        matchType: 'EXACT',
+        matchType: MatchType.EXACT,
         weight: 0.5
       },
       {
         founderField: 'stage',
         investorField: 'investmentStage',
         required: true,
-        matchType: 'EXACT',
+        matchType: MatchType.EXACT,
         weight: 0.3
       },
       {
         founderField: 'linkedinUrl',
         investorField: 'linkedinUrl',
         required: false,
-        matchType: 'SOFT',
+        matchType: MatchType.SOFT,
         weight: 0.2
       }
     ],
@@ -183,7 +229,7 @@ app.get('/api/pipeline/:pipelineId/match-criteria', authMiddleware, (req, res) =
 });
 
 // Submission routes
-app.get('/api/submissions', authMiddleware, (req, res) => {
+app.get('/api/submissions', authMiddleware, (req: AuthRequest, res: Response) => {
   // Return different data based on the user
   if (req.userId === 'admin123') {
     res.status(200).json([
@@ -249,7 +295,7 @@ app.get('/api/submissions', authMiddleware, (req, res) => {
 });
 
 // Personality routes
-app.get('/api/personality/:submissionId', authMiddleware, (req, res) => {
+app.get('/api/personality/:submissionId', authMiddleware, (req: AuthRequest, res: Response) => {
   res.status(200).json({
     submissionId: req.params.submissionId,
     traits: [
@@ -264,7 +310,7 @@ app.get('/api/personality/:submissionId', authMiddleware, (req, res) => {
 });
 
 // Match routes
-app.get('/api/matches/:pipelineId', authMiddleware, (req, res) => {
+app.get('/api/matches/:pipelineId', authMiddleware, (req: AuthRequest, res: Response) => {
   res.status(200).json([
     {
       id: '1',
@@ -293,7 +339,18 @@ app.get('/api/matches/:pipelineId', authMiddleware, (req, res) => {
   ]);
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Simple API server running on port ${PORT}`);
-});
+// Connect to database and start server
+const startServer = async () => {
+  try {
+    // Uncomment this when MongoDB connection is needed
+    // await connectToDatabase();
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
