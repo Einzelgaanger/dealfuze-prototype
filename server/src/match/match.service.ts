@@ -279,12 +279,17 @@ export class MatchService {
 
     // Calculate industry match score
     const industryScore = await this.calculateIndustryScore(
-      submission1.data.industry,
-      submission2.data.industry
+      submission1.data.get('industry') || '',
+      submission2.data.get('industry') || ''
     );
 
     // Calculate form response match score
-    const formScore = this.calculateFormScore(submission1.data, submission2.data, form1.components, form2.components);
+    const formScore = this.calculateFormScore(
+      Object.fromEntries(submission1.data),
+      Object.fromEntries(submission2.data),
+      form1.components,
+      form2.components
+    );
 
     // Calculate personality match score
     const personalityScore = personality1 && personality2 

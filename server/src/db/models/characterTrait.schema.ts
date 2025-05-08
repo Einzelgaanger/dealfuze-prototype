@@ -1,34 +1,52 @@
-import { Schema, model } from 'mongoose';
-import { CharacterTraitDocument, CharacterTraitSchoolDocument } from '../../types/characterTrait.type';
+import mongoose, { Schema } from "mongoose";
+import {
+  CharacterTrait,
+  CharacterTraitDocument,
+  CharacterTraitSchool,
+  CharacterTraitSchoolDocument,
+} from "../../types/characterTrait.type";
 
-const characterTraitSchoolSchema = new Schema<CharacterTraitSchoolDocument>({
-  name: { type: String, required: true, unique: true },
-  description: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+const characterTraitSchoolSchema = new Schema<CharacterTraitSchoolDocument>(
+  {
+    name: { type: String, required: true },
+    description: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
 
-const characterTraitSchema = new Schema<CharacterTraitDocument>({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'CharacterTraitSchool', required: true },
-  name: { type: String, required: true },
-  index: { type: Number, required: true },
-  relatedTraits: [{ type: Schema.Types.ObjectId, ref: 'CharacterTrait' }],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+const characterTraitSchema = new Schema<CharacterTraitDocument>(
+  {
+    name: { type: String, required: true },
+    description: { type: String },
+    schoolId: { type: Schema.Types.ObjectId, ref: "CharacterTraitSchool" },
+    index: { type: Number },
+    weight: { type: Number, default: 1 },
+    compatibleTraits: [{ type: Schema.Types.ObjectId, ref: "CharacterTrait" }],
+    incompatibleTraits: [{ type: Schema.Types.ObjectId, ref: "CharacterTrait" }],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
 
-// Update the updatedAt timestamp before saving
-characterTraitSchoolSchema.pre('save', function(next) {
+characterTraitSchoolSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
 });
 
-characterTraitSchema.pre('save', function(next) {
+characterTraitSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
 });
 
-const CharacterTraitSchool = model<CharacterTraitSchoolDocument>('CharacterTraitSchool', characterTraitSchoolSchema);
-const CharacterTrait = model<CharacterTraitDocument>('CharacterTrait', characterTraitSchema);
+export const CharacterTraitSchool = mongoose.model<CharacterTraitSchoolDocument>(
+  "CharacterTraitSchool",
+  characterTraitSchoolSchema
+);
 
-export { CharacterTraitSchool, CharacterTrait }; 
+export const CharacterTrait = mongoose.model<CharacterTraitDocument>(
+  "CharacterTrait",
+  characterTraitSchema
+); 
