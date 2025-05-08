@@ -10,11 +10,14 @@
   },
   "scripts": {
     "dev": "nodemon -w . -x tsx src/main.ts | pino-pretty",
+    "dev:express": "nodemon -w . -x tsx src/server.ts | pino-pretty",
     "start": "node dist/main.js",
+    "start:express": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "postbuild": "if not exist dist\\views mkdir dist\\views && if not exist dist\\public mkdir dist\\public && (if exist src\\views xcopy /E /I /Y src\\views dist\\views) && (if exist src\\public xcopy /E /I /Y src\\public dist\\public)",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "simple": "node simple-server.js"
   },
   "dependencies": {
     "@clerk/express": "^1.3.50",

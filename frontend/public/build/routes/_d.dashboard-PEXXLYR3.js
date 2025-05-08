@@ -3,24 +3,24 @@ import {
 } from "/build/_shared/chunk-MKAXAYAI.js";
 import {
   Button
-} from "/build/_shared/chunk-AIKIHU6L.js";
+} from "/build/_shared/chunk-7LFJABGF.js";
 import {
   Link as Link2,
   Plus,
   SquarePen,
   Users
-} from "/build/_shared/chunk-5ZGHMSNG.js";
+} from "/build/_shared/chunk-DVRXU2YJ.js";
 import "/build/_shared/chunk-KUGFZWZA.js";
 import {
   Link,
   Outlet,
   init_esm,
   useLoaderData
-} from "/build/_shared/chunk-7DEXXGJ3.js";
+} from "/build/_shared/chunk-V76AKOHL.js";
 import {
   createHotContext,
   init_remix_hmr
-} from "/build/_shared/chunk-O46JBUDP.js";
+} from "/build/_shared/chunk-JDDA2FTR.js";
 import "/build/_shared/chunk-M3R3PWNJ.js";
 import "/build/_shared/chunk-6SFGVGP7.js";
 import {
@@ -54,7 +54,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\_d.dashboard.tsx"
   );
-  import.meta.hot.lastModified = "1746707235303.034";
+  import.meta.hot.lastModified = "1746337063453.9258";
 }
 function Dashboard() {
   _s();
@@ -239,4 +239,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   Dashboard as default
 };
-//# sourceMappingURL=/build/routes/_d.dashboard-5QQLOVYY.js.map
+//# sourceMappingURL=/build/routes/_d.dashboard-PEXXLYR3.js.map

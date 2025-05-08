@@ -773,6 +773,9 @@ body {
 .min-w-\[var\(--radix-select-trigger-width\)\] {
   min-width: var(--radix-select-trigger-width);
 }
+.min-w-\[300px\] {
+  min-width: 300px;
+}
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -841,6 +844,9 @@ body {
 }
 .grid-cols-\[1fr\,auto\,1fr\] {
   grid-template-columns: 1fr auto 1fr;
+}
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 .flex-row {
   flex-direction: row;
@@ -1178,6 +1184,10 @@ body {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
+.bg-yellow-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 249 195 / var(--tw-bg-opacity, 1));
+}
 .fill-current {
   fill: currentColor;
 }
@@ -1354,6 +1364,9 @@ body {
 .pt-4 {
   padding-top: 1rem;
 }
+.pt-6 {
+  padding-top: 1.5rem;
+}
 .text-left {
   text-align: left;
 }
@@ -1401,6 +1414,10 @@ body {
 }
 .text-xs {
   font-size: .85rem;
+  line-height: 1rem;
+}
+.text-md {
+  font-size: 1rem;
   line-height: 1rem;
 }
 .font-bold {
@@ -1527,6 +1544,18 @@ body {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+.text-blue-800 {
+  --tw-text-opacity: 1;
+  color: rgb(30 64 175 / var(--tw-text-opacity, 1));
+}
+.text-green-800 {
+  --tw-text-opacity: 1;
+  color: rgb(22 101 52 / var(--tw-text-opacity, 1));
+}
+.text-yellow-800 {
+  --tw-text-opacity: 1;
+  color: rgb(133 77 14 / var(--tw-text-opacity, 1));
 }
 .no-underline {
   text-decoration-line: none;
@@ -1853,6 +1882,9 @@ html {
 }
 .hover\:bg-secondary\/80:hover {
   background-color: hsl(var(--secondary) / .8);
+}
+.hover\:bg-muted:hover {
+  background-color: hsl(var(--muted));
 }
 .hover\:text-accent-foreground:hover {
   color: hsl(var(--accent-foreground));
@@ -2232,6 +2264,9 @@ html {
   .md\:w-auto {
     width: auto;
   }
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .md\:flex-row {
     flex-direction: row;
   }
@@ -2263,6 +2298,9 @@ html {
 @media (min-width: 1024px) {
   .lg\:w-2\/3 {
     width: 66.666667%;
+  }
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .\[\&\:\:-webkit-search-cancel-button\]\:appearance-none::-webkit-search-cancel-button {
@@ -2445,4 +2483,4 @@ html {
 .\[\&_tr\]\:border-b tr {
   border-bottom-width: 1px;
 }
-/*# sourceMappingURL=/build/_assets/tailwind-OECNGORE.css.map */
+/*# sourceMappingURL=/build/_assets/tailwind-HUOQFLJ3.css.map */

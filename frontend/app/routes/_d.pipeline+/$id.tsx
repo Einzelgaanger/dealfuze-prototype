@@ -116,10 +116,20 @@ export async function loader(args: LoaderFunctionArgs) {
       }
     );
 
+    // Fetch matches for this pipeline
+    const matches = await api.get<{
+      pipelineId: string;
+      founderMatches: any[];
+      investorMatches: any[];
+    }>(`/pipeline/${id}/matches`, {
+      loaderArgs: args,
+    });
+
     return {
       pipeline,
       investorSubmissions: investorSubmissions.data,
       founderSubmissions: founderSubmissions.data,
+      matches,
     };
   } catch (error) {
     return redirectWithToast("/dashboard", {
@@ -130,15 +140,18 @@ export async function loader(args: LoaderFunctionArgs) {
 }
 
 export default function PipelinePage() {
-  const { pipeline, investorSubmissions, founderSubmissions } = useLoaderData<{
+  const { pipeline, investorSubmissions, founderSubmissions, matches } = useLoaderData<{
     pipeline: Pipeline;
     investorSubmissions: SubmissionDocument[];
     founderSubmissions: SubmissionDocument[];
+    matches: {
+      pipelineId: string;
+      founderMatches: any[];
+      investorMatches: any[];
+    };
   }>();
 
   const navigate = useNavigate();
-
-  console.log(investorSubmissions);
 
   return (
     <div>
@@ -159,166 +172,209 @@ export default function PipelinePage() {
             </Link>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Link to={`/pipeline/${pipeline.id}/match-criteria`}>
-            <Button className="p-2 px-4 flex gap-2" size="sm">
-              <Zap size={14} />
-              Match Criteria
-            </Button>
-          </Link>
-          <Link to={`/pipeline/${pipeline.id}/form`}>
-            <Button className="p-2 px-4 flex gap-2" size="sm">
-              <File size={14} />
-              Form
-            </Button>
-          </Link>
+
+        <p className="text-muted-foreground">{pipeline.description}</p>
+
+        <div className="flex flex-wrap gap-4">
+          <Card className="flex-1 min-w-[300px]">
+            <CardContent className="flex flex-col gap-4 pt-6">
+              <div className="flex items-center gap-2">
+                <Landmark className="text-muted-foreground" size={20} />
+                <h2 className="text-lg font-semibold">Pipeline Overview</h2>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Founders</span>
+                  <span className="font-medium">{pipeline.numberOfFounders}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Investors</span>
+                  <span className="font-medium">{pipeline.numberOfInvestors}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 min-w-[300px]">
+            <CardContent className="flex flex-col gap-4 pt-6">
+              <div className="flex items-center gap-2">
+                <Zap className="text-muted-foreground" size={20} />
+                <h2 className="text-lg font-semibold">Quick Actions</h2>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Link
+                  to={`/pipeline/${pipeline.id}/match-criteria`}
+                  className="flex justify-between items-center hover:bg-muted p-2 rounded-md transition-colors"
+                >
+                  <span className="text-muted-foreground">Match Criteria</span>
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to={`/pipeline/${pipeline.id}/form`}
+                  className="flex justify-between items-center hover:bg-muted p-2 rounded-md transition-colors"
+                >
+                  <span className="text-muted-foreground">Forms</span>
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        {pipeline.description && (
-          <p className="text-gray-500 w-full lg:w-2/3 text-sm">
-            {pipeline.description}
-          </p>
-        )}
-        <div className="flex gap-4 items-end">
+
+        {/* Matching Dashboard */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Rocket className="text-muted-foreground" size={20} />
+            <h2 className="text-lg font-semibold">Matching Dashboard</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Founder Matches */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-md font-semibold">Top Matches for Founders</h3>
+                  <div className="border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Founder</TableHead>
+                          <TableHead>Best Investor Match</TableHead>
+                          <TableHead>Score</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {matches.founderMatches
+                          .filter((match, index, self) => 
+                            // Get only the top match for each founder
+                            index === self.findIndex(m => m.founderId === match.founderId)
+                          )
+                          .map((match) => (
+                            <TableRow key={match.id}>
+                              <TableCell className="font-medium">{match.founderName}</TableCell>
+                              <TableCell>{match.investorName}</TableCell>
+                              <TableCell>{Math.round(match.score * 100)}%</TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs ${match.status === 'accepted' ? 'bg-green-100 text-green-800' : match.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                                  {match.status}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        {matches.founderMatches.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
+                              No matches found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate(`/pipeline/${pipeline.id}/founders`)} >
+                      View All Founders <ArrowRightIcon className="ml-1" size={12} />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Investor Matches */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-md font-semibold">Top Matches for Investors</h3>
+                  <div className="border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Investor</TableHead>
+                          <TableHead>Best Founder Match</TableHead>
+                          <TableHead>Score</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {matches.investorMatches
+                          .filter((match, index, self) => 
+                            // Get only the top match for each investor
+                            index === self.findIndex(m => m.investorId === match.investorId)
+                          )
+                          .map((match) => (
+                            <TableRow key={match.id}>
+                              <TableCell className="font-medium">{match.investorName}</TableCell>
+                              <TableCell>{match.founderName}</TableCell>
+                              <TableCell>{Math.round(match.score * 100)}%</TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs ${match.status === 'accepted' ? 'bg-green-100 text-green-800' : match.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                                  {match.status}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        {matches.investorMatches.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
+                              No matches found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate(`/pipeline/${pipeline.id}/investors`)} >
+                      View All Investors <ArrowRightIcon className="ml-1" size={12} />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <ChartLine className="text-muted-foreground" size={20} />
+            <h2 className="text-lg font-semibold">Statistics</h2>
+          </div>
+
           <PipelineStatistics
             investorSubmissions={investorSubmissions}
             founderSubmissions={founderSubmissions}
           />
-          <div className="flex flex-col gap-4 flex-1">
-            <Link
-              to={`/pipeline/${pipeline.id}/founders`}
-              className="flex justify-between w-full bg-gray-50 items-center p-2 mb-2 rounded-lg group cursor-pointer transition-all duration-50"
-            >
-              <div className="flex gap-2 items-center">
-                <ChartLine />
-                <h3 className="text-lg font-semibold">Top Matches</h3>
-              </div>
-              <div className="group-hover:visible invisible">
-                <ArrowRightIcon size={16} />
-              </div>
-            </Link>
-            <div className="border border-gray-200 rounded-lg">
-              <Table className="w-full text-left">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12 text-center">No.</TableHead>
-                    <TableHead className="text-center">Investor</TableHead>
-                    <TableHead className="text-center">Founder</TableHead>
-                    <TableHead className="text-center">Score</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[
-                    {
-                      investor: "John Doe",
-                      founder: "Jane Doe",
-                      score: 0.9,
-                      personality: 0.9,
-                    },
-                    {
-                      investor: "John Doe",
-                      founder: "Jane Doe",
-                      score: 0.9,
-                      personality: 0.9,
-                    },
-                    {
-                      investor: "John Doe",
-                      founder: "Jane Doe",
-                      score: 0.9,
-                      personality: 0.9,
-                    },
-                    {
-                      investor: "John Doe",
-                      founder: "Jane Doe",
-                      score: 0.9,
-                      personality: 0.9,
-                    },
-                    {
-                      investor: "John Doe",
-                      founder: "Jane Doe",
-                      score: 0.9,
-                      personality: 0.9,
-                    },
-                    {
-                      investor: "John Doe",
-                      founder: "Jane Doe",
-                      score: 0.9,
-                      personality: 0.9,
-                    },
-                  ]
-                    .slice(0, 6)
-                    .map((match, i) => (
-                      <TableRow
-                        key={`${match.investor}-${i}`}
-                        className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-all duration-50 w-full"
-                        onClick={() => {
-                          navigate(
-                            `/pipeline/${pipeline.id}/match?founder=${match.founder}&investor=${match.investor}`
-                          );
-                        }}
-                      >
-                        <TableCell className="p-2 text-sm text-gray-700 text-center">
-                          {i + 1}
-                        </TableCell>
-                        <TableCell className="p-2 text-sm text-gray-700 text-center">
-                          {match.investor}
-                        </TableCell>
-                        <TableCell className="p-2 text-sm text-gray-700 text-center">
-                          {match.founder}
-                        </TableCell>
-                        <TableCell className="p-2 text-sm text-gray-700 text-center">
-                          {match.score * 100}%
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
         </div>
-        <div className="flex md:flex-row flex-col gap-6 w-full">
-          <div className="w-full">
-            <Link
-              to={`/pipeline/${pipeline.id}/investors`}
-              className="flex justify-between w-full hover:bg-gray-50 items-center p-2 mb-2 rounded-lg group cursor-pointer transition-all duration-50"
-            >
-              <div className="flex gap-2 items-center">
-                <Landmark size={16} />
-                <h3 className="text-lg font-semibold">Recent Investors</h3>
-              </div>
-              <div className="group-hover:visible invisible">
-                <ArrowRightIcon size={16} />
-              </div>
-            </Link>
-            <PipelinePeopleSummaryView
-              people={investorSubmissions.slice(0, 6).map((submission) => {
-                return {
-                  name: submission.name,
-                  submittedAt: submission.submittedAt,
-                };
-              })}
-            />
+
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <File className="text-muted-foreground" size={20} />
+            <h2 className="text-lg font-semibold">Recent Submissions</h2>
           </div>
-          <div className="w-full">
-            <Link
-              to={`/pipeline/${pipeline.id}/founders`}
-              className="flex justify-between w-full hover:bg-gray-50 items-center p-2 mb-2 rounded-lg group cursor-pointer transition-all duration-50"
-            >
-              <div className="flex gap-2 items-center">
-                <Rocket size={16} />
-                <h3 className="text-lg font-semibold">Recent Founders</h3>
-              </div>
-              <div className="group-hover:visible invisible">
-                <ArrowRightIcon size={16} />
-              </div>
-            </Link>
-            <PipelinePeopleSummaryView
-              people={founderSubmissions.slice(0, 6).map((submission) => {
-                return {
-                  name: submission.name,
-                  submittedAt: submission.submittedAt,
-                };
-              })}
-            />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium">Founders</h3>
+              <PipelinePeopleSummaryView
+                people={founderSubmissions.map((submission) => ({
+                  name: (submission.data.name as string) || 'Unknown',
+                  submittedAt: new Date(submission.submittedAt),
+                }))}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium">Investors</h3>
+              <PipelinePeopleSummaryView
+                people={investorSubmissions.map((submission) => ({
+                  name: (submission.data.name as string) || 'Unknown',
+                  submittedAt: new Date(submission.submittedAt),
+                }))}
+              />
+            </div>
           </div>
         </div>
       </div>
