@@ -3,7 +3,7 @@ import {
 } from "/build/_shared/chunk-NBEH4DGX.js";
 import {
   require_dist
-} from "/build/_shared/chunk-ZKF6SCAC.js";
+} from "/build/_shared/chunk-ELJJICGY.js";
 import {
   require_ssr
 } from "/build/_shared/chunk-BJ6Y6LHN.js";
@@ -16,7 +16,7 @@ import {
   User,
   X,
   cn
-} from "/build/_shared/chunk-DVRXU2YJ.js";
+} from "/build/_shared/chunk-5ZGHMSNG.js";
 import {
   require_jsx_runtime
 } from "/build/_shared/chunk-KUGFZWZA.js";
@@ -28,11 +28,11 @@ import {
   useLoaderData,
   useLocation,
   useRouteError
-} from "/build/_shared/chunk-V76AKOHL.js";
+} from "/build/_shared/chunk-7DEXXGJ3.js";
 import {
   createHotContext,
   init_remix_hmr
-} from "/build/_shared/chunk-JDDA2FTR.js";
+} from "/build/_shared/chunk-O46JBUDP.js";
 import "/build/_shared/chunk-M3R3PWNJ.js";
 import "/build/_shared/chunk-6SFGVGP7.js";
 import {
@@ -168,7 +168,9 @@ function PopChild({ children, isPresent, anchorX }) {
         `);
     }
     return () => {
-      document.head.removeChild(style);
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
     };
   }, [isPresent]);
   return (0, import_jsx_runtime.jsx)(PopChildMeasure, { isPresent, childRef: ref, sizeRef: size, children: React.cloneElement(children, { ref }) });
@@ -1109,11 +1111,11 @@ function mix(from, to, p) {
   return mixer(from, to);
 }
 
-// ../node_modules/motion-dom/dist/es/animation/drivers/driver-frameloop.mjs
+// ../node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
 var frameloopDriver = (update) => {
   const passTimestamp = ({ timestamp }) => update(timestamp);
   return {
-    start: () => frame.update(passTimestamp, true),
+    start: (keepAlive = true) => frame.update(passTimestamp, keepAlive),
     stop: () => cancelFrame(passTimestamp),
     /**
      * If we're processing this frame we can use the
@@ -1601,10 +1603,12 @@ var JSAnimation = class extends WithPromise {
     this.currentTime = 0;
     this.holdTime = null;
     this.playbackSpeed = 1;
-    this.stop = () => {
-      const { motionValue: motionValue2 } = this.options;
-      if (motionValue2 && motionValue2.updatedAt !== time.now()) {
-        this.tick(time.now());
+    this.stop = (sync = true) => {
+      if (sync) {
+        const { motionValue: motionValue2 } = this.options;
+        if (motionValue2 && motionValue2.updatedAt !== time.now()) {
+          this.tick(time.now());
+        }
       }
       this.isStopped = true;
       if (this.state === "idle")
@@ -1745,6 +1749,7 @@ var JSAnimation = class extends WithPromise {
     } else if (this.driver) {
       this.startTime = this.driver.now() - newTime / this.playbackSpeed;
     }
+    this.driver?.start(false);
   }
   get speed() {
     return this.playbackSpeed;
@@ -1828,6 +1833,7 @@ var JSAnimation = class extends WithPromise {
       this.options.ease = "linear";
       this.initAnimation();
     }
+    this.driver?.stop();
     return timeline.observe(this);
   }
 };
@@ -2026,10 +2032,9 @@ function flushKeyframeResolvers() {
 }
 var KeyframeResolver = class {
   constructor(unresolvedKeyframes, onComplete, name, motionValue2, element, isAsync = false) {
-    this.isComplete = false;
+    this.state = "pending";
     this.isAsync = false;
     this.needsMeasurement = false;
-    this.isScheduled = false;
     this.unresolvedKeyframes = [...unresolvedKeyframes];
     this.onComplete = onComplete;
     this.name = name;
@@ -2038,7 +2043,7 @@ var KeyframeResolver = class {
     this.isAsync = isAsync;
   }
   scheduleResolve() {
-    this.isScheduled = true;
+    this.state = "scheduled";
     if (this.isAsync) {
       toResolve.add(this);
       if (!isScheduled) {
@@ -2081,19 +2086,19 @@ var KeyframeResolver = class {
   }
   measureEndState() {
   }
-  complete(isForced2 = false) {
-    this.isComplete = true;
-    this.onComplete(this.unresolvedKeyframes, this.finalKeyframe, isForced2);
+  complete(isForcedComplete = false) {
+    this.state = "complete";
+    this.onComplete(this.unresolvedKeyframes, this.finalKeyframe, isForcedComplete);
     toResolve.delete(this);
   }
   cancel() {
-    if (!this.isComplete) {
-      this.isScheduled = false;
+    if (this.state === "scheduled") {
       toResolve.delete(this);
+      this.state = "pending";
     }
   }
   resume() {
-    if (!this.isComplete)
+    if (this.state === "pending")
       this.scheduleResolve();
   }
 };
@@ -2469,9 +2474,8 @@ var AsyncMotionValueAnimation = class extends WithPromise {
       if (this._animation) {
         this._animation.stop();
         this.stopTimeline?.();
-      } else {
-        this.keyframeResolver?.cancel();
       }
+      this.keyframeResolver?.cancel();
     };
     this.createdAt = time.now();
     const optionsWithDefaults = {
@@ -2533,6 +2537,7 @@ var AsyncMotionValueAnimation = class extends WithPromise {
   }
   get animation() {
     if (!this._animation) {
+      this.keyframeResolver?.resume();
       flushKeyframeResolvers();
     }
     return this._animation;
@@ -2576,7 +2581,10 @@ var AsyncMotionValueAnimation = class extends WithPromise {
     this.animation.complete();
   }
   cancel() {
-    this.animation.cancel();
+    if (this._animation) {
+      this.animation.cancel();
+    }
+    this.keyframeResolver?.cancel();
   }
 };
 
@@ -2837,7 +2845,7 @@ var DOMKeyframesResolver = class extends KeyframeResolver {
           unresolvedKeyframes[i] = parseFloat(value);
         }
       }
-    } else {
+    } else if (positionalValues[name]) {
       this.needsMeasurement = true;
     }
   }
@@ -2902,6 +2910,300 @@ function resolveElements(elementOrSelector, scope, selectorCache) {
   }
   return Array.from(elementOrSelector);
 }
+
+// ../node_modules/motion-dom/dist/es/value/index.mjs
+var MAX_VELOCITY_DELTA = 30;
+var isFloat = (value) => {
+  return !isNaN(parseFloat(value));
+};
+var collectMotionValues = {
+  current: void 0
+};
+var MotionValue = class {
+  /**
+   * @param init - The initiating value
+   * @param config - Optional configuration options
+   *
+   * -  `transformer`: A function to transform incoming values with.
+   */
+  constructor(init, options = {}) {
+    this.version = "__VERSION__";
+    this.canTrackVelocity = null;
+    this.events = {};
+    this.updateAndNotify = (v, render = true) => {
+      const currentTime = time.now();
+      if (this.updatedAt !== currentTime) {
+        this.setPrevFrameValue();
+      }
+      this.prev = this.current;
+      this.setCurrent(v);
+      if (this.current !== this.prev) {
+        this.events.change?.notify(this.current);
+        if (this.dependents) {
+          for (const dependent of this.dependents) {
+            dependent.dirty();
+          }
+        }
+      }
+      if (render) {
+        this.events.renderRequest?.notify(this.current);
+      }
+    };
+    this.hasAnimated = false;
+    this.setCurrent(init);
+    this.owner = options.owner;
+  }
+  setCurrent(current) {
+    this.current = current;
+    this.updatedAt = time.now();
+    if (this.canTrackVelocity === null && current !== void 0) {
+      this.canTrackVelocity = isFloat(this.current);
+    }
+  }
+  setPrevFrameValue(prevFrameValue = this.current) {
+    this.prevFrameValue = prevFrameValue;
+    this.prevUpdatedAt = this.updatedAt;
+  }
+  /**
+   * Adds a function that will be notified when the `MotionValue` is updated.
+   *
+   * It returns a function that, when called, will cancel the subscription.
+   *
+   * When calling `onChange` inside a React component, it should be wrapped with the
+   * `useEffect` hook. As it returns an unsubscribe function, this should be returned
+   * from the `useEffect` function to ensure you don't add duplicate subscribers..
+   *
+   * ```jsx
+   * export const MyComponent = () => {
+   *   const x = useMotionValue(0)
+   *   const y = useMotionValue(0)
+   *   const opacity = useMotionValue(1)
+   *
+   *   useEffect(() => {
+   *     function updateOpacity() {
+   *       const maxXY = Math.max(x.get(), y.get())
+   *       const newOpacity = transform(maxXY, [0, 100], [1, 0])
+   *       opacity.set(newOpacity)
+   *     }
+   *
+   *     const unsubscribeX = x.on("change", updateOpacity)
+   *     const unsubscribeY = y.on("change", updateOpacity)
+   *
+   *     return () => {
+   *       unsubscribeX()
+   *       unsubscribeY()
+   *     }
+   *   }, [])
+   *
+   *   return <motion.div style={{ x }} />
+   * }
+   * ```
+   *
+   * @param subscriber - A function that receives the latest value.
+   * @returns A function that, when called, will cancel this subscription.
+   *
+   * @deprecated
+   */
+  onChange(subscription) {
+    if (true) {
+      warnOnce(false, `value.onChange(callback) is deprecated. Switch to value.on("change", callback).`);
+    }
+    return this.on("change", subscription);
+  }
+  on(eventName, callback) {
+    if (!this.events[eventName]) {
+      this.events[eventName] = new SubscriptionManager();
+    }
+    const unsubscribe = this.events[eventName].add(callback);
+    if (eventName === "change") {
+      return () => {
+        unsubscribe();
+        frame.read(() => {
+          if (!this.events.change.getSize()) {
+            this.stop();
+          }
+        });
+      };
+    }
+    return unsubscribe;
+  }
+  clearListeners() {
+    for (const eventManagers in this.events) {
+      this.events[eventManagers].clear();
+    }
+  }
+  /**
+   * Attaches a passive effect to the `MotionValue`.
+   */
+  attach(passiveEffect, stopPassiveEffect) {
+    this.passiveEffect = passiveEffect;
+    this.stopPassiveEffect = stopPassiveEffect;
+  }
+  /**
+   * Sets the state of the `MotionValue`.
+   *
+   * @remarks
+   *
+   * ```jsx
+   * const x = useMotionValue(0)
+   * x.set(10)
+   * ```
+   *
+   * @param latest - Latest value to set.
+   * @param render - Whether to notify render subscribers. Defaults to `true`
+   *
+   * @public
+   */
+  set(v, render = true) {
+    if (!render || !this.passiveEffect) {
+      this.updateAndNotify(v, render);
+    } else {
+      this.passiveEffect(v, this.updateAndNotify);
+    }
+  }
+  setWithVelocity(prev, current, delta) {
+    this.set(current);
+    this.prev = void 0;
+    this.prevFrameValue = prev;
+    this.prevUpdatedAt = this.updatedAt - delta;
+  }
+  /**
+   * Set the state of the `MotionValue`, stopping any active animations,
+   * effects, and resets velocity to `0`.
+   */
+  jump(v, endAnimation = true) {
+    this.updateAndNotify(v);
+    this.prev = v;
+    this.prevUpdatedAt = this.prevFrameValue = void 0;
+    endAnimation && this.stop();
+    if (this.stopPassiveEffect)
+      this.stopPassiveEffect();
+  }
+  dirty() {
+    this.events.change?.notify(this.current);
+  }
+  addDependent(dependent) {
+    if (!this.dependents) {
+      this.dependents = /* @__PURE__ */ new Set();
+    }
+    this.dependents.add(dependent);
+  }
+  removeDependent(dependent) {
+    if (this.dependents) {
+      this.dependents.delete(dependent);
+    }
+  }
+  /**
+   * Returns the latest state of `MotionValue`
+   *
+   * @returns - The latest state of `MotionValue`
+   *
+   * @public
+   */
+  get() {
+    if (collectMotionValues.current) {
+      collectMotionValues.current.push(this);
+    }
+    return this.current;
+  }
+  /**
+   * @public
+   */
+  getPrevious() {
+    return this.prev;
+  }
+  /**
+   * Returns the latest velocity of `MotionValue`
+   *
+   * @returns - The latest velocity of `MotionValue`. Returns `0` if the state is non-numerical.
+   *
+   * @public
+   */
+  getVelocity() {
+    const currentTime = time.now();
+    if (!this.canTrackVelocity || this.prevFrameValue === void 0 || currentTime - this.updatedAt > MAX_VELOCITY_DELTA) {
+      return 0;
+    }
+    const delta = Math.min(this.updatedAt - this.prevUpdatedAt, MAX_VELOCITY_DELTA);
+    return velocityPerSecond(parseFloat(this.current) - parseFloat(this.prevFrameValue), delta);
+  }
+  /**
+   * Registers a new animation to control this `MotionValue`. Only one
+   * animation can drive a `MotionValue` at one time.
+   *
+   * ```jsx
+   * value.start()
+   * ```
+   *
+   * @param animation - A function that starts the provided animation
+   */
+  start(startAnimation) {
+    this.stop();
+    return new Promise((resolve) => {
+      this.hasAnimated = true;
+      this.animation = startAnimation(resolve);
+      if (this.events.animationStart) {
+        this.events.animationStart.notify();
+      }
+    }).then(() => {
+      if (this.events.animationComplete) {
+        this.events.animationComplete.notify();
+      }
+      this.clearAnimation();
+    });
+  }
+  /**
+   * Stop the currently active animation.
+   *
+   * @public
+   */
+  stop() {
+    if (this.animation) {
+      this.animation.stop();
+      if (this.events.animationCancel) {
+        this.events.animationCancel.notify();
+      }
+    }
+    this.clearAnimation();
+  }
+  /**
+   * Returns `true` if this value is currently animating.
+   *
+   * @public
+   */
+  isAnimating() {
+    return !!this.animation;
+  }
+  clearAnimation() {
+    delete this.animation;
+  }
+  /**
+   * Destroy and clean up subscribers to this `MotionValue`.
+   *
+   * The `MotionValue` hooks like `useMotionValue` and `useTransform` automatically
+   * handle the lifecycle of the returned `MotionValue`, so this method is only necessary if you've manually
+   * created a `MotionValue` via the `motionValue` function.
+   *
+   * @public
+   */
+  destroy() {
+    this.dependents?.clear();
+    this.events.destroy?.notify();
+    this.clearListeners();
+    this.stop();
+    if (this.stopPassiveEffect) {
+      this.stopPassiveEffect();
+    }
+  }
+};
+function motionValue(init, options) {
+  return new MotionValue(init, options);
+}
+
+// ../node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+var getValueAsType = (value, type) => {
+  return type && typeof value === "number" ? type.transform(value) : value;
+};
 
 // ../node_modules/motion-dom/dist/es/frameloop/microtask.mjs
 var { schedule: microtask, cancel: cancelMicrotask } = /* @__PURE__ */ createRenderBatcher(queueMicrotask, false);
@@ -3058,10 +3360,12 @@ function press(targetOrSelector, onPressStart, options = {}) {
     const onPointerEnd = (endEvent, success) => {
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerCancel);
-      if (!isValidPressEvent(endEvent) || !isPressing.has(target)) {
+      if (isPressing.has(target)) {
+        isPressing.delete(target);
+      }
+      if (!isValidPressEvent(endEvent)) {
         return;
       }
-      isPressing.delete(target);
       if (typeof onPressEnd === "function") {
         onPressEnd(endEvent, { success });
       }
@@ -3088,283 +3392,9 @@ function press(targetOrSelector, onPressStart, options = {}) {
   return cancelEvents;
 }
 
-// ../node_modules/motion-dom/dist/es/value/index.mjs
-var MAX_VELOCITY_DELTA = 30;
-var isFloat = (value) => {
-  return !isNaN(parseFloat(value));
-};
-var collectMotionValues = {
-  current: void 0
-};
-var MotionValue = class {
-  /**
-   * @param init - The initiating value
-   * @param config - Optional configuration options
-   *
-   * -  `transformer`: A function to transform incoming values with.
-   */
-  constructor(init, options = {}) {
-    this.version = "__VERSION__";
-    this.canTrackVelocity = null;
-    this.events = {};
-    this.updateAndNotify = (v, render = true) => {
-      const currentTime = time.now();
-      if (this.updatedAt !== currentTime) {
-        this.setPrevFrameValue();
-      }
-      this.prev = this.current;
-      this.setCurrent(v);
-      if (this.current !== this.prev) {
-        this.events.change?.notify(this.current);
-      }
-      if (render) {
-        this.events.renderRequest?.notify(this.current);
-      }
-    };
-    this.hasAnimated = false;
-    this.setCurrent(init);
-    this.owner = options.owner;
-  }
-  setCurrent(current) {
-    this.current = current;
-    this.updatedAt = time.now();
-    if (this.canTrackVelocity === null && current !== void 0) {
-      this.canTrackVelocity = isFloat(this.current);
-    }
-  }
-  setPrevFrameValue(prevFrameValue = this.current) {
-    this.prevFrameValue = prevFrameValue;
-    this.prevUpdatedAt = this.updatedAt;
-  }
-  /**
-   * Adds a function that will be notified when the `MotionValue` is updated.
-   *
-   * It returns a function that, when called, will cancel the subscription.
-   *
-   * When calling `onChange` inside a React component, it should be wrapped with the
-   * `useEffect` hook. As it returns an unsubscribe function, this should be returned
-   * from the `useEffect` function to ensure you don't add duplicate subscribers..
-   *
-   * ```jsx
-   * export const MyComponent = () => {
-   *   const x = useMotionValue(0)
-   *   const y = useMotionValue(0)
-   *   const opacity = useMotionValue(1)
-   *
-   *   useEffect(() => {
-   *     function updateOpacity() {
-   *       const maxXY = Math.max(x.get(), y.get())
-   *       const newOpacity = transform(maxXY, [0, 100], [1, 0])
-   *       opacity.set(newOpacity)
-   *     }
-   *
-   *     const unsubscribeX = x.on("change", updateOpacity)
-   *     const unsubscribeY = y.on("change", updateOpacity)
-   *
-   *     return () => {
-   *       unsubscribeX()
-   *       unsubscribeY()
-   *     }
-   *   }, [])
-   *
-   *   return <motion.div style={{ x }} />
-   * }
-   * ```
-   *
-   * @param subscriber - A function that receives the latest value.
-   * @returns A function that, when called, will cancel this subscription.
-   *
-   * @deprecated
-   */
-  onChange(subscription) {
-    if (true) {
-      warnOnce(false, `value.onChange(callback) is deprecated. Switch to value.on("change", callback).`);
-    }
-    return this.on("change", subscription);
-  }
-  on(eventName, callback) {
-    if (!this.events[eventName]) {
-      this.events[eventName] = new SubscriptionManager();
-    }
-    const unsubscribe = this.events[eventName].add(callback);
-    if (eventName === "change") {
-      return () => {
-        unsubscribe();
-        frame.read(() => {
-          if (!this.events.change.getSize()) {
-            this.stop();
-          }
-        });
-      };
-    }
-    return unsubscribe;
-  }
-  clearListeners() {
-    for (const eventManagers in this.events) {
-      this.events[eventManagers].clear();
-    }
-  }
-  /**
-   * Attaches a passive effect to the `MotionValue`.
-   */
-  attach(passiveEffect, stopPassiveEffect) {
-    this.passiveEffect = passiveEffect;
-    this.stopPassiveEffect = stopPassiveEffect;
-  }
-  /**
-   * Sets the state of the `MotionValue`.
-   *
-   * @remarks
-   *
-   * ```jsx
-   * const x = useMotionValue(0)
-   * x.set(10)
-   * ```
-   *
-   * @param latest - Latest value to set.
-   * @param render - Whether to notify render subscribers. Defaults to `true`
-   *
-   * @public
-   */
-  set(v, render = true) {
-    if (!render || !this.passiveEffect) {
-      this.updateAndNotify(v, render);
-    } else {
-      this.passiveEffect(v, this.updateAndNotify);
-    }
-  }
-  setWithVelocity(prev, current, delta) {
-    this.set(current);
-    this.prev = void 0;
-    this.prevFrameValue = prev;
-    this.prevUpdatedAt = this.updatedAt - delta;
-  }
-  /**
-   * Set the state of the `MotionValue`, stopping any active animations,
-   * effects, and resets velocity to `0`.
-   */
-  jump(v, endAnimation = true) {
-    this.updateAndNotify(v);
-    this.prev = v;
-    this.prevUpdatedAt = this.prevFrameValue = void 0;
-    endAnimation && this.stop();
-    if (this.stopPassiveEffect)
-      this.stopPassiveEffect();
-  }
-  /**
-   * Returns the latest state of `MotionValue`
-   *
-   * @returns - The latest state of `MotionValue`
-   *
-   * @public
-   */
-  get() {
-    if (collectMotionValues.current) {
-      collectMotionValues.current.push(this);
-    }
-    return this.current;
-  }
-  /**
-   * @public
-   */
-  getPrevious() {
-    return this.prev;
-  }
-  /**
-   * Returns the latest velocity of `MotionValue`
-   *
-   * @returns - The latest velocity of `MotionValue`. Returns `0` if the state is non-numerical.
-   *
-   * @public
-   */
-  getVelocity() {
-    const currentTime = time.now();
-    if (!this.canTrackVelocity || this.prevFrameValue === void 0 || currentTime - this.updatedAt > MAX_VELOCITY_DELTA) {
-      return 0;
-    }
-    const delta = Math.min(this.updatedAt - this.prevUpdatedAt, MAX_VELOCITY_DELTA);
-    return velocityPerSecond(parseFloat(this.current) - parseFloat(this.prevFrameValue), delta);
-  }
-  /**
-   * Registers a new animation to control this `MotionValue`. Only one
-   * animation can drive a `MotionValue` at one time.
-   *
-   * ```jsx
-   * value.start()
-   * ```
-   *
-   * @param animation - A function that starts the provided animation
-   */
-  start(startAnimation) {
-    this.stop();
-    return new Promise((resolve) => {
-      this.hasAnimated = true;
-      this.animation = startAnimation(resolve);
-      if (this.events.animationStart) {
-        this.events.animationStart.notify();
-      }
-    }).then(() => {
-      if (this.events.animationComplete) {
-        this.events.animationComplete.notify();
-      }
-      this.clearAnimation();
-    });
-  }
-  /**
-   * Stop the currently active animation.
-   *
-   * @public
-   */
-  stop() {
-    if (this.animation) {
-      this.animation.stop();
-      if (this.events.animationCancel) {
-        this.events.animationCancel.notify();
-      }
-    }
-    this.clearAnimation();
-  }
-  /**
-   * Returns `true` if this value is currently animating.
-   *
-   * @public
-   */
-  isAnimating() {
-    return !!this.animation;
-  }
-  clearAnimation() {
-    delete this.animation;
-  }
-  /**
-   * Destroy and clean up subscribers to this `MotionValue`.
-   *
-   * The `MotionValue` hooks like `useMotionValue` and `useTransform` automatically
-   * handle the lifecycle of the returned `MotionValue`, so this method is only necessary if you've manually
-   * created a `MotionValue` via the `motionValue` function.
-   *
-   * @public
-   */
-  destroy() {
-    this.events.destroy?.notify();
-    this.clearListeners();
-    this.stop();
-    if (this.stopPassiveEffect) {
-      this.stopPassiveEffect();
-    }
-  }
-};
-function motionValue(init, options) {
-  return new MotionValue(init, options);
-}
-
 // ../node_modules/motion-dom/dist/es/value/types/utils/find.mjs
 var valueTypes = [...dimensionValueTypes, color, complex];
 var findValueType = (v) => valueTypes.find(testValueType(v));
-
-// ../node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
-var getValueAsType = (value, type) => {
-  return type && typeof value === "number" ? type.transform(value) : value;
-};
 
 // ../node_modules/framer-motion/dist/es/context/LazyContext.mjs
 var import_react11 = __toESM(require_react(), 1);
@@ -3989,7 +4019,7 @@ function buildSVGAttrs(state, {
   pathOffset = 0,
   // This is object creation, which we try to avoid per-frame.
   ...latest
-}, isSVGTag2, transformTemplate) {
+}, isSVGTag2, transformTemplate, styleProp) {
   buildHTMLStyles(state, latest, transformTemplate);
   if (isSVGTag2) {
     if (state.style.viewBox) {
@@ -4009,7 +4039,7 @@ function buildSVGAttrs(state, {
     delete attrs.transformOrigin;
   }
   if (style.transform) {
-    style.transformBox = "fill-box";
+    style.transformBox = styleProp?.transformBox ?? "fill-box";
     delete attrs.transformBox;
   }
   if (attrX !== void 0)
@@ -4036,7 +4066,7 @@ var isSVGTag = (tag) => typeof tag === "string" && tag.toLowerCase() === "svg";
 function useSVGProps(props, visualState, _isStatic, Component3) {
   const visualProps = (0, import_react19.useMemo)(() => {
     const state = createSvgRenderState();
-    buildSVGAttrs(state, visualState, isSVGTag(Component3), props.transformTemplate);
+    buildSVGAttrs(state, visualState, isSVGTag(Component3), props.transformTemplate, props.style);
     return {
       ...state.attrs,
       style: { ...state.style }
@@ -4364,7 +4394,7 @@ var animateMotionValue = (name, value, target, transition = {}, element, isHando
       return;
     }
   }
-  return new AsyncMotionValueAnimation(options);
+  return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
 };
 
 // ../node_modules/framer-motion/dist/es/animation/interfaces/visual-element-target.mjs
@@ -5723,7 +5753,7 @@ var MeasureLayoutWithContext = class extends import_react22.Component {
   }
   getSnapshotBeforeUpdate(prevProps) {
     const { layoutDependency, visualElement, drag: drag2, isPresent } = this.props;
-    const projection = visualElement.projection;
+    const { projection } = visualElement;
     if (!projection)
       return null;
     projection.isPresent = isPresent;
@@ -6213,7 +6243,7 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
     /**
      * Lifecycles
      */
-    mount(instance, isLayoutDirty = this.root.hasTreeAnimated) {
+    mount(instance) {
       if (this.instance)
         return;
       this.isSVG = isSVGElement(instance);
@@ -6224,7 +6254,7 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
       }
       this.root.nodes.add(this);
       this.parent && this.parent.children.add(this);
-      if (isLayoutDirty && (layout2 || layoutId)) {
+      if (this.root.hasTreeAnimated && (layout2 || layoutId)) {
         this.isLayoutDirty = true;
       }
       if (attachResizeListener) {
@@ -6435,7 +6465,7 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
       if (this.scroll && this.scroll.animationId === this.root.animationId && this.scroll.phase === phase) {
         needsMeasurement = false;
       }
-      if (needsMeasurement) {
+      if (needsMeasurement && this.instance) {
         const isRoot = checkIsScrollRoot(this.instance);
         this.scroll = {
           animationId: this.root.animationId,
@@ -6454,7 +6484,7 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
       const transformTemplate = this.getTransformTemplate();
       const transformTemplateValue = transformTemplate ? transformTemplate(this.latestValues, "") : void 0;
       const transformTemplateHasChanged = transformTemplateValue !== this.prevTransformTemplateValue;
-      if (isResetRequested && (hasProjection || hasTransform(this.latestValues) || transformTemplateHasChanged)) {
+      if (isResetRequested && this.instance && (hasProjection || hasTransform(this.latestValues) || transformTemplateHasChanged)) {
         resetTransform(this.instance, transformTemplateValue);
         this.shouldResetTransform = false;
         this.scheduleRender();
@@ -6773,10 +6803,8 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
     }
     startAnimation(options) {
       this.notifyListeners("animationStart");
-      this.currentAnimation && this.currentAnimation.stop();
-      if (this.resumingFrom && this.resumingFrom.currentAnimation) {
-        this.resumingFrom.currentAnimation.stop();
-      }
+      this.currentAnimation?.stop(false);
+      this.resumingFrom?.currentAnimation?.stop(false);
       if (this.pendingAnimation) {
         cancelFrame(this.pendingAnimation);
         this.pendingAnimation = void 0;
@@ -6784,8 +6812,10 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
       this.pendingAnimation = frame.update(() => {
         globalProjectionState.hasAnimatedSinceResize = true;
         activeAnimations.layout++;
-        this.currentAnimation = animateSingleValue(0, animationTarget, {
+        this.motionValue || (this.motionValue = motionValue(0));
+        this.currentAnimation = animateSingleValue(this.motionValue, [0, 1e3], {
           ...options,
+          isSync: true,
           onUpdate: (latest) => {
             this.mixTargetDelta(latest);
             options.onUpdate && options.onUpdate(latest);
@@ -6818,7 +6848,7 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
     finishAnimation() {
       if (this.currentAnimation) {
         this.mixTargetDelta && this.mixTargetDelta(animationTarget);
-        this.currentAnimation.stop();
+        this.currentAnimation.stop(false);
       }
       this.completeAnimation();
     }
@@ -6987,7 +7017,7 @@ function createProjectionNode2({ attachResizeListener, defaultParent, measureScr
     }
     // Only run on root
     resetTree() {
-      this.root.nodes.forEach((node) => node.currentAnimation?.stop());
+      this.root.nodes.forEach((node) => node.currentAnimation?.stop(false));
       this.root.nodes.forEach(clearMeasurements);
       this.root.sharedNodes.clear();
     }
@@ -7549,7 +7579,6 @@ var VisualElement = class {
   }
   unmount() {
     this.projection && this.projection.unmount();
-    this.projection = void 0;
     cancelFrame(this.notifyUpdate);
     cancelFrame(this.render);
     this.valueSubscriptions.forEach((remove) => remove());
@@ -7930,7 +7959,7 @@ var SVGVisualElement = class extends DOMVisualElement {
     return scrapeMotionValuesFromProps2(props, prevProps, visualElement);
   }
   build(renderState, latestValues, props) {
-    buildSVGAttrs(renderState, latestValues, this.isSVGTag, props.transformTemplate);
+    buildSVGAttrs(renderState, latestValues, this.isSVGTag, props.transformTemplate, props.style);
   }
   renderInstance(instance, renderState, styleProp, projection) {
     renderSVG(instance, renderState, styleProp, projection);
@@ -7988,7 +8017,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\ui\\sidebar.tsx"
   );
-  import.meta.hot.lastModified = "1746337063442.682";
+  import.meta.hot.lastModified = "1746707235286.229";
 }
 var SidebarContext = (0, import_react24.createContext)(void 0);
 var useSidebar = () => {
@@ -8260,7 +8289,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\sidebar.tsx"
   );
-  import.meta.hot.lastModified = "1746337063438.2305";
+  import.meta.hot.lastModified = "1746707235248.9824";
 }
 function Sidebar2({
   children,
@@ -8449,7 +8478,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\_d.tsx"
   );
-  import.meta.hot.lastModified = "1746337063455.0442";
+  import.meta.hot.lastModified = "1746707235354.1025";
 }
 function shouldRevalidate({
   currentParams,
@@ -8635,4 +8664,4 @@ export {
   DashboardLayout as default,
   shouldRevalidate
 };
-//# sourceMappingURL=/build/routes/_d-F7RJ7VRJ.js.map
+//# sourceMappingURL=/build/routes/_d-FE26UYAJ.js.map

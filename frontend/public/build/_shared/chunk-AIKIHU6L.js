@@ -1,14 +1,14 @@
 import {
   clsx,
   cn
-} from "/build/_shared/chunk-DVRXU2YJ.js";
+} from "/build/_shared/chunk-5ZGHMSNG.js";
 import {
   require_jsx_runtime
 } from "/build/_shared/chunk-KUGFZWZA.js";
 import {
   createHotContext,
   init_remix_hmr
-} from "/build/_shared/chunk-JDDA2FTR.js";
+} from "/build/_shared/chunk-O46JBUDP.js";
 import {
   require_jsx_dev_runtime
 } from "/build/_shared/chunk-CXRXIBWZ.js";
@@ -64,6 +64,7 @@ function useComposedRefs(...refs) {
 
 // ../node_modules/@radix-ui/react-slot/dist/index.mjs
 var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
+"use client";
 function createSlot(ownerName) {
   const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
   const Slot2 = React2.forwardRef((props, forwardedRef) => {
@@ -92,11 +93,12 @@ var Slot = /* @__PURE__ */ createSlot("Slot");
 function createSlotClone(ownerName) {
   const SlotClone = React2.forwardRef((props, forwardedRef) => {
     const { children, ...slotProps } = props;
+    const childrenRef = React2.isValidElement(children) ? getElementRef(children) : void 0;
+    const ref = useComposedRefs(childrenRef, forwardedRef);
     if (React2.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
       const props2 = mergeProps(slotProps, children.props);
       if (children.type !== React2.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
+        props2.ref = ref;
       }
       return React2.cloneElement(children, props2);
     }
@@ -118,8 +120,9 @@ function mergeProps(slotProps, childProps) {
     if (isHandler) {
       if (slotPropValue && childPropValue) {
         overrideProps[propName] = (...args) => {
-          childPropValue(...args);
+          const result = childPropValue(...args);
           slotPropValue(...args);
+          return result;
         };
       } else if (slotPropValue) {
         overrideProps[propName] = slotPropValue;
@@ -210,7 +213,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\ui\\button.tsx"
   );
-  import.meta.hot.lastModified = "1746337063442.682";
+  import.meta.hot.lastModified = "1746707235262.1377";
 }
 var buttonVariants = cva("inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0", {
   variants: {
@@ -266,4 +269,4 @@ export {
   createSlot,
   Button
 };
-//# sourceMappingURL=/build/_shared/chunk-7LFJABGF.js.map
+//# sourceMappingURL=/build/_shared/chunk-AIKIHU6L.js.map

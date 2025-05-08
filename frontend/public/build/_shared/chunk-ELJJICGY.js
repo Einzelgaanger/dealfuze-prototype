@@ -1,7 +1,7 @@
 import {
   esm_exports,
   init_esm
-} from "/build/_shared/chunk-V76AKOHL.js";
+} from "/build/_shared/chunk-7DEXXGJ3.js";
 import {
   require_react_dom
 } from "/build/_shared/chunk-6SFGVGP7.js";
@@ -302,14 +302,14 @@ var require_loadClerkJsScript = __commonJS({
       const stripped = str.replace(regex, "");
       return `clerk.${stripped}`;
     }
-    var versionSelector = (clerkJSVersion, packageVersion = "5.63.5") => {
+    var versionSelector = (clerkJSVersion, packageVersion = "5.64.1") => {
       if (clerkJSVersion) {
         return clerkJSVersion;
       }
       const prereleaseTag = getPrereleaseTag(packageVersion);
       if (prereleaseTag) {
         if (prereleaseTag === "snapshot") {
-          return "5.63.5";
+          return "5.64.1";
         }
         return prereleaseTag;
       }
@@ -3010,7 +3010,7 @@ Learn more: https://clerk.com/docs/components/clerk-provider`.trim()
         {
           ...subscriptionsParams
         },
-        organization?.__experimental_getSubscriptions,
+        organization?.getSubscriptions,
         {
           keepPreviousData: subscriptionsSafeValues.keepPreviousData,
           infinite: subscriptionsSafeValues.infinite,
@@ -3591,6 +3591,7 @@ var require_authorization = __commonJS({
     var isValidMaxAge = (maxAge) => typeof maxAge === "number" && maxAge > 0;
     var isValidLevel = (level) => ALLOWED_LEVELS.has(level);
     var isValidVerificationType = (type) => ALLOWED_TYPES.has(type);
+    var prefixWithOrg = (value) => value.startsWith("org:") ? value : `org:${value}`;
     var checkOrgAuthorization = (params, options) => {
       const { orgId, orgRole, orgPermissions } = options;
       if (!params.role && !params.permission) {
@@ -3600,10 +3601,10 @@ var require_authorization = __commonJS({
         return null;
       }
       if (params.permission) {
-        return orgPermissions.includes(params.permission);
+        return orgPermissions.includes(prefixWithOrg(params.permission));
       }
       if (params.role) {
-        return orgRole === params.role;
+        return orgRole === prefixWithOrg(params.role);
       }
       return null;
     };
@@ -4713,6 +4714,7 @@ var require_dist2 = __commonJS({
       OrganizationList: () => OrganizationList,
       OrganizationProfile: () => OrganizationProfile2,
       OrganizationSwitcher: () => OrganizationSwitcher,
+      PricingTable: () => PricingTable,
       Protect: () => Protect,
       RedirectToCreateOrganization: () => RedirectToCreateOrganization,
       RedirectToOrganizationProfile: () => RedirectToOrganizationProfile,
@@ -4730,7 +4732,6 @@ var require_dist2 = __commonJS({
       UserButton: () => UserButton,
       UserProfile: () => UserProfile2,
       Waitlist: () => Waitlist,
-      __experimental_PricingTable: () => __experimental_PricingTable,
       useAuth: () => useAuth,
       useClerk: () => import_react20.useClerk,
       useEmailLink: () => useEmailLink,
@@ -5634,7 +5635,7 @@ var require_dist2 = __commonJS({
       },
       { component: "Waitlist", renderWhileLoading: true }
     );
-    var __experimental_PricingTable = withClerk(
+    var PricingTable = withClerk(
       ({ clerk, component, fallback, ...props }) => {
         const mountingStatus = useWaitForComponentMount(component);
         const shouldShowFallback = mountingStatus === "rendering" || !clerk.loaded;
@@ -5645,15 +5646,15 @@ var require_dist2 = __commonJS({
           ClerkHostRenderer,
           {
             component,
-            mount: clerk.__experimental_mountPricingTable,
-            unmount: clerk.__experimental_unmountPricingTable,
+            mount: clerk.mountPricingTable,
+            unmount: clerk.unmountPricingTable,
             updateProps: clerk.__unstable__updateProps,
             props,
             rootProps: rendererRootProps
           }
         ));
       },
-      { component: "__experimental_PricingTable", renderWhileLoading: true }
+      { component: "PricingTable", renderWhileLoading: true }
     );
     var import_deprecated = require_deprecated();
     var import_react21 = __toESM(require_react());
@@ -6062,7 +6063,7 @@ var require_dist2 = __commonJS({
     }
     var SDK_METADATA = {
       name: "@clerk/clerk-react",
-      version: "5.30.4",
+      version: "5.31.1",
       environment: "development"
     };
     var _status;
@@ -6158,6 +6159,17 @@ var require_dist2 = __commonJS({
             return callback();
           } else {
             this.premountMethodCalls.set("buildAfterSignOutUrl", callback);
+          }
+        };
+        this.buildNewSubscriptionRedirectUrl = () => {
+          const callback = () => {
+            var _a;
+            return ((_a = this.clerkjs) == null ? void 0 : _a.buildNewSubscriptionRedirectUrl()) || "";
+          };
+          if (this.clerkjs && this.loaded) {
+            return callback();
+          } else {
+            this.premountMethodCalls.set("buildNewSubscriptionRedirectUrl", callback);
           }
         };
         this.buildAfterMultiSessionSingleSignOutUrl = () => {
@@ -6330,7 +6342,7 @@ var require_dist2 = __commonJS({
             clerkjs.mountWaitlist(node, props);
           });
           this.premountPricingTableNodes.forEach((props, node) => {
-            clerkjs.__experimental_mountPricingTable(node, props);
+            clerkjs.mountPricingTable(node, props);
           });
           if (typeof this.clerkjs.status === "undefined") {
             __privateGet(this, _eventBus).emit(import_clerkEventBus.clerkEvents.Status, "ready");
@@ -6344,9 +6356,9 @@ var require_dist2 = __commonJS({
             return clerkjs.__unstable__updateProps(props);
           }
         };
-        this.__experimental_nextTask = async (params) => {
+        this.__experimental_navigateToTask = async (params) => {
           if (this.clerkjs) {
-            return this.clerkjs.__experimental_nextTask(params);
+            return this.clerkjs.__experimental_navigateToTask(params);
           } else {
             return Promise.reject();
           }
@@ -6635,16 +6647,16 @@ var require_dist2 = __commonJS({
             this.premountWaitlistNodes.delete(node);
           }
         };
-        this.__experimental_mountPricingTable = (node, props) => {
+        this.mountPricingTable = (node, props) => {
           if (this.clerkjs && this.loaded) {
-            this.clerkjs.__experimental_mountPricingTable(node, props);
+            this.clerkjs.mountPricingTable(node, props);
           } else {
             this.premountPricingTableNodes.set(node, props);
           }
         };
-        this.__experimental_unmountPricingTable = (node) => {
+        this.unmountPricingTable = (node) => {
           if (this.clerkjs && this.loaded) {
-            this.clerkjs.__experimental_unmountPricingTable(node);
+            this.clerkjs.unmountPricingTable(node);
           } else {
             this.premountPricingTableNodes.delete(node);
           }
@@ -7128,9 +7140,9 @@ var require_dist2 = __commonJS({
           return false;
         }
       }
-      get __experimental_commerce() {
+      get billing() {
         var _a;
-        return (_a = this.clerkjs) == null ? void 0 : _a.__experimental_commerce;
+        return (_a = this.clerkjs) == null ? void 0 : _a.billing;
       }
       __unstable__setEnvironment(...args) {
         if (this.clerkjs && "__unstable__setEnvironment" in this.clerkjs) {
@@ -7656,7 +7668,7 @@ var require_RemixClerkProvider = __commonJS({
     __reExport(RemixClerkProvider_exports, require_dist2(), module.exports);
     var SDK_METADATA = {
       name: "@clerk/remix",
-      version: "4.6.5"
+      version: "4.7.1"
     };
     var awaitableNavigateRef = { current: void 0 };
     function ClerkProvider({ children, ...rest }) {
@@ -8226,4 +8238,4 @@ use-sync-external-store/cjs/use-sync-external-store-shim.development.js:
    * LICENSE file in the root directory of this source tree.
    *)
 */
-//# sourceMappingURL=/build/_shared/chunk-ZKF6SCAC.js.map
+//# sourceMappingURL=/build/_shared/chunk-ELJJICGY.js.map

@@ -6,7 +6,7 @@ import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import { connectToDatabase } from "./db/config/dbconfig";
-import apiRoutes from "./routes";
+// import apiRoutes from "./routes";
 import { pinoHttp } from "pino-http";
 import logger from "./logger";
 import { AppConfig } from "./config";

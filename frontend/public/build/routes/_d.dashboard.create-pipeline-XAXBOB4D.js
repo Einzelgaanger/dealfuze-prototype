@@ -24,12 +24,12 @@ import {
   useFocusGuards,
   useId,
   useLayoutEffect2
-} from "/build/_shared/chunk-JBUL2YSR.js";
+} from "/build/_shared/chunk-THYF4W65.js";
 import {
   Button,
   createSlot,
   useComposedRefs
-} from "/build/_shared/chunk-7LFJABGF.js";
+} from "/build/_shared/chunk-AIKIHU6L.js";
 import {
   require_node
 } from "/build/_shared/chunk-NBEH4DGX.js";
@@ -38,7 +38,7 @@ import {
 } from "/build/_shared/chunk-BJ6Y6LHN.js";
 import {
   cn
-} from "/build/_shared/chunk-DVRXU2YJ.js";
+} from "/build/_shared/chunk-5ZGHMSNG.js";
 import {
   require_jsx_runtime
 } from "/build/_shared/chunk-KUGFZWZA.js";
@@ -48,11 +48,11 @@ import {
   useActionData,
   useLoaderData,
   useNavigate
-} from "/build/_shared/chunk-V76AKOHL.js";
+} from "/build/_shared/chunk-7DEXXGJ3.js";
 import {
   createHotContext,
   init_remix_hmr
-} from "/build/_shared/chunk-JDDA2FTR.js";
+} from "/build/_shared/chunk-O46JBUDP.js";
 import "/build/_shared/chunk-M3R3PWNJ.js";
 import {
   require_react_dom
@@ -3669,7 +3669,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\components\\ui\\select.tsx"
   );
-  import.meta.hot.lastModified = "1746337063442.682";
+  import.meta.hot.lastModified = "1746707235283.212";
 }
 var Select2 = Root22;
 var SelectGroup2 = Group;
@@ -4686,13 +4686,14 @@ var base64urlRegex = /^([0-9a-zA-Z-_]{4})*(([0-9a-zA-Z-_]{2}(==)?)|([0-9a-zA-Z-_
 var dateRegexSource = `((\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|(0[469]|11)-(0[1-9]|[12]\\d|30)|(02)-(0[1-9]|1\\d|2[0-8])))`;
 var dateRegex = new RegExp(`^${dateRegexSource}$`);
 function timeRegexSource(args) {
-  let regex = `([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d`;
+  let secondsRegexSource = `[0-5]\\d`;
   if (args.precision) {
-    regex = `${regex}\\.\\d{${args.precision}}`;
+    secondsRegexSource = `${secondsRegexSource}\\.\\d{${args.precision}}`;
   } else if (args.precision == null) {
-    regex = `${regex}(\\.\\d+)?`;
+    secondsRegexSource = `${secondsRegexSource}(\\.\\d+)?`;
   }
-  return regex;
+  const secondsQuantifier = args.precision ? "+" : "?";
+  return `([01]\\d|2[0-3]):[0-5]\\d(:${secondsRegexSource})${secondsQuantifier}`;
 }
 function timeRegex(args) {
   return new RegExp(`^${timeRegexSource(args)}$`);
@@ -7924,7 +7925,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\_d.dashboard.create-pipeline.tsx"
   );
-  import.meta.hot.lastModified = "1746337063452.9197";
+  import.meta.hot.lastModified = "1746707235303.034";
 }
 var pipelineSchema = z.object({
   pipelineName: z.string().min(3),
@@ -8085,4 +8086,4 @@ export {
   CreatePipeline as default,
   shouldRevalidate
 };
-//# sourceMappingURL=/build/routes/_d.dashboard.create-pipeline-MGZCK3AO.js.map
+//# sourceMappingURL=/build/routes/_d.dashboard.create-pipeline-XAXBOB4D.js.map
