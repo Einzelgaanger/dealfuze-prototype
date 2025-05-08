@@ -12,7 +12,7 @@
     "dev": "nodemon -w . -x tsx src/main.ts | pino-pretty",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.json",
-    "postbuild": "mkdir -p dist/views dist/public && cp -r src/views/* dist/views/ 2>/dev/null || true && cp -r src/public/* dist/public/ 2>/dev/null || true",
+    "postbuild": "if not exist dist\\views mkdir dist\\views && if not exist dist\\public mkdir dist\\public && (if exist src\\views xcopy /E /I /Y src\\views dist\\views) && (if exist src\\public xcopy /E /I /Y src\\public dist\\public)",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },

@@ -7,9 +7,9 @@ import { FormService } from '../form/form.service';
 import { SubmissionService } from '../submission/submission.service';
 import { Submission, SubmissionDocument } from '../types/submission.type';
 import { Match, MatchDocument } from '../types/match.type';
-import { Form, FormDocument } from '../types/form.type';
-import { Personality, PersonalityDocument } from '../types/personality.type';
-import { MatchCriteria, MatchCriteriaDocument } from '../types/matchCriteria.type';
+import { IForm, FormDocument } from '../types/form.type';
+import { IPersonality, PersonalityDocument } from '../types/personality.type';
+import { IMatchCriteria, MatchCriteriaDocument } from '../types/matchCriteria.type';
 import { LinkedinProfileStatus } from '../types/linkedinProfile.type';
 import LinkedinProfileModel from '../db/models/linkedinProfile.schema';
 import { AppConfig } from "../config";
@@ -20,34 +20,34 @@ export async function brightDataCron() {
   });
 
   // Get models through NestJS's dependency injection
-  const matchModel = getModelToken('Match') as unknown as Model<MatchDocument>;
-  const submissionModel = getModelToken('Submission') as unknown as Model<SubmissionDocument>;
-  const personalityModel = getModelToken('Personality') as unknown as Model<PersonalityDocument>;
-  const formModel = getModelToken('Form') as unknown as Model<FormDocument>;
-  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<MatchCriteriaDocument>;
+  const matchModel = getModelToken('Match') as unknown as Model<Match>;
+  const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
+  const personalityModel = getModelToken('Personality') as unknown as Model<IPersonality>;
+  const formModel = getModelToken('Form') as unknown as Model<IForm>;
+  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<IMatchCriteria>;
 
-  // Initialize services in the correct order
-  const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel);
-  const formService = new FormService(formModel, matchCriteriaService);
+  // Initialize services in the correct order with type assertions to fix TypeScript errors
+  const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel as any);
+  const formService = new FormService(formModel as any, matchCriteriaService);
 
   const submissionService = new SubmissionService(
-    submissionModel,
+    submissionModel as any,
     null as any,
     null as any
   );
 
   const matchService = new MatchService(
-    formModel,
-    personalityModel,
-    submissionModel,
-    matchModel,
-    matchCriteriaModel,
+    formModel as any,
+    personalityModel as any,
+    submissionModel as any,
+    matchModel as any,
+    matchCriteriaModel as any,
     submissionService
   );
 
   const personalityService = new PersonalityService(
-    personalityModel,
-    submissionModel,
+    personalityModel as any,
+    submissionModel as any,
     matchService
   );
 

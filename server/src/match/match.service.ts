@@ -419,9 +419,9 @@ export class MatchService {
         const weight = trait1.weight * trait2.weight;
         totalWeight += weight;
 
-        if (trait1.compatibleTraits.some(id => id.equals(trait2._id))) {
+        if (trait1.compatibleTraits.some(id => id.equals(trait2._id as any))) {
           totalScore += weight;
-        } else if (trait1.incompatibleTraits.some(id => id.equals(trait2._id))) {
+        } else if (trait1.incompatibleTraits.some(id => id.equals(trait2._id as any))) {
           totalScore -= weight;
         }
       }
