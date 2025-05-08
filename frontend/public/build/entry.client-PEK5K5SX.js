@@ -4,7 +4,7 @@ import {
 import {
   RemixBrowser,
   init_esm
-} from "/build/_shared/chunk-3PYAUO7Q.js";
+} from "/build/_shared/chunk-V76AKOHL.js";
 import {
   createHotContext,
   init_remix_hmr
@@ -48,4 +48,4 @@ if (import.meta) {
     }, this)
   );
 });
-//# sourceMappingURL=/build/entry.client-VLHYEWM2.js.map
+//# sourceMappingURL=/build/entry.client-PEK5K5SX.js.map

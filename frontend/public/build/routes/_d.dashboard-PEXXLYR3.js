@@ -16,7 +16,7 @@ import {
   Outlet,
   init_esm,
   useLoaderData
-} from "/build/_shared/chunk-3PYAUO7Q.js";
+} from "/build/_shared/chunk-V76AKOHL.js";
 import {
   createHotContext,
   init_remix_hmr
@@ -239,4 +239,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   Dashboard as default
 };
-//# sourceMappingURL=/build/routes/_d.dashboard-PQURTSB4.js.map
+//# sourceMappingURL=/build/routes/_d.dashboard-PEXXLYR3.js.map

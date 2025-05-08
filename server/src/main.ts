@@ -50,6 +50,12 @@ async function bootstrap() {
     res.status(200).json({ message: 'Pipeline API is available' });
   });
   
+  // Add a catch-all route for debugging purposes
+  app.getHttpAdapter().get('*', (req, res, next) => {
+    console.log(`Request received for path: ${req.path}`);
+    next();
+  });
+  
   // Get cron service
   const cronService = app.get(CronService);
   

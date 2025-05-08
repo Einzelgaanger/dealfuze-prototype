@@ -9255,7 +9255,7 @@ var init_components = __esm({
         console.warn(["`<LiveReload />` is obsolete when using Vite and can conflict with Vite's built-in HMR runtime.", "", "Remove `<LiveReload />` from your code and instead only use `<Scripts />`.", "Then refresh the page to remove lingering scripts from `<LiveReload />`."].join("\n"));
         return null;
       }
-      origin ??= "http://localhost:3002/";
+      origin ??= "http://localhost:3001/";
       let js = String.raw;
       return /* @__PURE__ */ React8.createElement("script", {
         nonce,
@@ -10476,4 +10476,4 @@ react-router-dom/dist/index.js:
    * @license MIT
    *)
 */
-//# sourceMappingURL=/build/_shared/chunk-3PYAUO7Q.js.map
+//# sourceMappingURL=/build/_shared/chunk-V76AKOHL.js.map

@@ -23,6 +23,6 @@ export class PipelineModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(PipelineAuthMiddleware)
-      .forRoutes({ path: 'api/pipeline*', method: RequestMethod.ALL });
+      .forRoutes(PipelineController);
   }
 }

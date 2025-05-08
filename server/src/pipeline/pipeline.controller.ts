@@ -7,7 +7,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { PipelineDocument } from "../types/pipeline.type";
 import { Model } from "mongoose";
 
-@Controller('api/pipeline')
+@Controller('pipeline')
 export class PipelineController {
   constructor(
     private readonly pipelineService: PipelineService,
