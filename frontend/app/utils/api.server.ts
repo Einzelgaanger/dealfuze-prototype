@@ -1,11 +1,12 @@
 import { getAuth } from "@clerk/remix/ssr.server";
-import { LoaderFunctionArgs, redirect } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node";
 
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const API_URL = process.env.API_URL || "http://localhost:4000/api";
+// Use environment variable for API URL in production, fallback to localhost for development
+const API_URL = process.env.API_URL || "http://localhost:9876/api";
 
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 

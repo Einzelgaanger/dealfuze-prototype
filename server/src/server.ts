@@ -133,7 +133,7 @@ interface CharacterTrait {
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5050; // Changed port to avoid conflict
+const PORT = process.env.PORT || 7777; // Changed port to match API configuration
 
 // Middleware
 app.use(cors());

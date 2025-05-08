@@ -45,7 +45,7 @@ init_esm();
 var import_ssr = __toESM(require_ssr(), 1);
 
 // app/tailwind.css?url
-var tailwind_default = "/build/_assets/tailwind-GGMYP6UG.css?url";
+var tailwind_default = "/build/_assets/tailwind-RFLW6QSF.css?url";
 
 // app/root.tsx
 var import_remix = __toESM(require_dist(), 1);
@@ -1368,4 +1368,4 @@ export {
   links,
   meta
 };
-//# sourceMappingURL=/build/root-VRFRHNDK.js.map
+//# sourceMappingURL=/build/root-OR6XNY5V.js.map

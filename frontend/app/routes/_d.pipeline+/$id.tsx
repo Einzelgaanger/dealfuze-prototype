@@ -76,47 +76,65 @@ export async function loader(args: LoaderFunctionArgs) {
   const { id } = args.params;
 
   try {
+    console.log(`Fetching pipeline with ID: ${id}`);
     const pipeline = await api.get<Pipeline>(`/pipeline/${id}`, {
       loaderArgs: args,
     });
+    console.log('Pipeline data received:', pipeline);
 
+    console.log(`Fetching forms for pipeline: ${id}`);
     const forms = await api.get<{ data: FormDocument[] }>(
       `/pipeline/${id}/form`,
       {
         loaderArgs: args,
       }
     );
+    console.log('Forms data received:', forms);
 
-    const investorForm = forms.data.find(
+    // Handle case where forms data structure might be different than expected
+    const formsData = Array.isArray(forms.data) ? forms.data : 
+                     (forms.data ? [forms.data] : []);
+
+    const investorForm = formsData.find(
       (form) => form.submitterType === FormType.INVESTOR
     );
 
-    const founderForm = forms.data.find(
+    const founderForm = formsData.find(
       (form) => form.submitterType === FormType.FOUNDER
     );
 
+    console.log('Investor form:', investorForm);
+    console.log('Founder form:', founderForm);
+
     if (!investorForm || !founderForm) {
-      return redirectWithToast(`/pipeline/${id}`, {
+      console.error('Missing investor or founder form');
+      return redirectWithToast(`/dashboard`, {
         type: "error",
         title: "No investor or founder form found",
+        description: "Please check the pipeline configuration."
       });
     }
 
+    console.log(`Fetching investor submissions for form: ${investorForm._id}`);
     const investorSubmissions = await api.get<{ data: SubmissionDocument[] }>(
       `/forms/${investorForm._id}/submissions`,
       {
         loaderArgs: args,
       }
     );
+    console.log('Investor submissions received:', investorSubmissions);
 
+    console.log(`Fetching founder submissions for form: ${founderForm._id}`);
     const founderSubmissions = await api.get<{ data: SubmissionDocument[] }>(
       `/forms/${founderForm._id}/submissions`,
       {
         loaderArgs: args,
       }
     );
+    console.log('Founder submissions received:', founderSubmissions);
 
     // Fetch matches for this pipeline
+    console.log(`Fetching matches for pipeline: ${id}`);
     const matches = await api.get<{
       pipelineId: string;
       founderMatches: any[];
@@ -124,17 +142,27 @@ export async function loader(args: LoaderFunctionArgs) {
     }>(`/pipeline/${id}/matches`, {
       loaderArgs: args,
     });
+    console.log('Matches data received:', matches);
 
     return {
       pipeline,
-      investorSubmissions: investorSubmissions.data,
-      founderSubmissions: founderSubmissions.data,
+      investorSubmissions: investorSubmissions.data || [],
+      founderSubmissions: founderSubmissions.data || [],
       matches,
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error in pipeline loader:', error);
+    console.error('Error details:', error.message, error.stack);
+    
+    // More descriptive error message based on the error type
+    const errorTitle = error.status === 404 ? "Pipeline not found" : 
+                      "Error loading pipeline data";
+    const errorDescription = error.message || "Please try again or contact support.";
+    
     return redirectWithToast("/dashboard", {
       type: "error",
-      title: "Pipeline not found",
+      title: errorTitle,
+      description: errorDescription
     });
   }
 }
