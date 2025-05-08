@@ -4,24 +4,22 @@ import { Model, Types } from 'mongoose';
 import { Match, MatchDocument, MatchStatus, RejectionReason } from './match.schema';
 import { IMatchCriteria } from '../types/matchCriteria.type';
 import { SubmissionService } from '../submission/submission.service';
-import { Submission } from '../submission/submission.schema';
+import { Submission } from '../types/submission.type';
 import { IForm } from '../types/form.type';
 import { IPersonality } from '../types/personality.type';
-import IndustryFamilyModel from '../db/models/industryFamily.schema';
-import CharacterTraitModel from '../db/models/characterTrait.schema';
+import { IndustryFamily } from '../types/industryFamily.type';
+import { CharacterTrait } from '../types/characterTrait.type';
 import { FormType } from '../types/form.type';
-import { ISubmission } from '../types/submission.type';
-import { IMatch } from '../types/match.type';
-import { ICharacterTrait } from '../types/characterTrait.type';
-import { IIndustryFamily } from '../types/industryFamily.type';
-import { FormComponent } from '../types/formComponent.type';
 import { MatchType } from '../types/match.type';
+import { FormComponent } from '../types/formComponent.type';
 import { AppConfig } from '../config';
 import FormModel from '../db/models/form.schema';
 import PersonalityModel from '../db/models/personality.schema';
 import SubmissionModel from '../db/models/submission.schema';
 import MatchModel from '../db/models/match.schema';
 import MatchCriteriaModel from '../db/models/matchCriteria.schema';
+import IndustryFamilyModel from '../db/models/industryFamily.schema';
+import { CharacterTrait as CharacterTraitModel } from '../db/models/characterTrait.schema';
 
 @Injectable()
 export class MatchService {
@@ -30,8 +28,8 @@ export class MatchService {
   constructor(
     @InjectModel(FormModel.name) private formModel: Model<IForm>,
     @InjectModel(PersonalityModel.name) private personalityModel: Model<IPersonality>,
-    @InjectModel(SubmissionModel.name) private submissionModel: Model<ISubmission>,
-    @InjectModel(MatchModel.name) private matchModel: Model<IMatch>,
+    @InjectModel(SubmissionModel.name) private submissionModel: Model<Submission>,
+    @InjectModel(MatchModel.name) private matchModel: Model<Match>,
     @InjectModel(MatchCriteriaModel.name) private matchCriteriaModel: Model<IMatchCriteria>,
     @Inject(forwardRef(() => SubmissionService))
     private submissionService: SubmissionService

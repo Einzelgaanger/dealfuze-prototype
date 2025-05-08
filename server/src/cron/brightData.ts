@@ -8,6 +8,9 @@ import PersonalityModel from "../db/models/personality.schema";
 import { Submission } from "../types/submission.type";
 import { Match } from "../types/match.type";
 import { getModelToken } from '@nestjs/mongoose';
+import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
+import { FormService } from '../form/form.service';
+import { SubmissionService } from '../submission/submission.service';
 
 export async function brightDataCron() {
   const pendingProfiles = await LinkedinProfileModel.find({
@@ -17,18 +20,45 @@ export async function brightDataCron() {
   // Get models through NestJS's dependency injection
   const matchModel = getModelToken('Match') as unknown as Model<Match>;
   const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
+  const personalityModel = getModelToken('Personality') as unknown as Model<any>;
+  const formModel = getModelToken('Form') as unknown as Model<any>;
+  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<any>;
 
-  // Create services with required dependencies
+  // Initialize services in the correct order
+  const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel);
+  const formService = new FormService(formModel, matchCriteriaService);
+
+  const submissionService = new SubmissionService(
+    submissionModel,
+    null as any,
+    null as any
+  );
+
   const matchService = new MatchService(
     matchModel,
-    null // Pass null for submissionService as it's not used in this context
+    personalityModel,
+    submissionModel,
+    matchModel,
+    matchCriteriaModel,
+    submissionService
   );
 
   const personalityService = new PersonalityService(
-    PersonalityModel,
+    personalityModel,
     submissionModel,
     matchService
   );
+
+  // Update submission service with proper dependencies
+  Object.defineProperty(submissionService, 'matchService', {
+    value: matchService,
+    writable: true
+  });
+
+  Object.defineProperty(submissionService, 'personalityService', {
+    value: personalityService,
+    writable: true
+  });
 
   for (const profile of pendingProfiles) {
     try {

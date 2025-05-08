@@ -1,5 +1,5 @@
 import {
-  ISubmission,
+  Submission,
   SubmissionDataType,
   SubmissionStatus,
   SubmissionType,
@@ -9,7 +9,6 @@ import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
 import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document, Types } from 'mongoose';
-import { Submission, SubmissionDocument } from './submission.schema';
 import { MatchService } from '../match/match.service';
 import { PersonalityService } from '../personality/personality.service';
 
@@ -21,7 +20,7 @@ export interface FormattedSubmission {
   id: string;
   formId: string;
   type: SubmissionType;
-  data: SubmissionDataType;
+  data: Map<string, any>;
   submittedAt: Date;
   ipAddress?: string;
   userAgent?: string;
@@ -47,8 +46,8 @@ interface SubmissionVirtuals {
 @Injectable()
 export class SubmissionService {
   constructor(
-    @InjectModel(Submission.name)
-    private readonly submissionModel: Model<SubmissionDocument>,
+    @InjectModel('Submission')
+    private readonly submissionModel: Model<Submission>,
     @Inject(forwardRef(() => MatchService))
     private readonly matchService: MatchService,
     private readonly personalityService: PersonalityService
@@ -60,7 +59,7 @@ export class SubmissionService {
     userAgent: string,
     ipAddress: string,
     type: SubmissionType = SubmissionType.FOUNDER
-  ): Promise<SubmissionDocument> {
+  ): Promise<Submission> {
     const submission = new this.submissionModel({
       formId: new Types.ObjectId(formId),
       data,
@@ -75,19 +74,19 @@ export class SubmissionService {
     return submission.save();
   }
 
-  async findAll(): Promise<SubmissionDocument[]> {
+  async findAll(): Promise<Submission[]> {
     return this.submissionModel.find({ isDeleted: false }).exec();
   }
 
-  async findById(id: string): Promise<SubmissionDocument | null> {
+  async findById(id: string): Promise<Submission | null> {
     return this.submissionModel.findById(id).exec();
   }
 
-  async findByFormId(formId: string): Promise<SubmissionDocument[]> {
+  async findByFormId(formId: string): Promise<Submission[]> {
     return this.submissionModel.find({ formId: new Types.ObjectId(formId), isDeleted: false }).exec();
   }
 
-  async update(id: string, data: Partial<ISubmission>): Promise<SubmissionDocument | null> {
+  async update(id: string, data: Partial<Submission>): Promise<Submission | null> {
     return this.submissionModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
@@ -97,14 +96,14 @@ export class SubmissionService {
       {
         isDeleted: true,
         deletedAt: new Date(),
-        status: SubmissionStatus.DELETED
+        status: SubmissionStatus.FAILED
       },
       { new: true }
     ).exec();
     return !!result;
   }
 
-  async updateStatus(id: string, status: SubmissionStatus): Promise<SubmissionDocument | null> {
+  async updateStatus(id: string, status: SubmissionStatus): Promise<Submission | null> {
     return this.submissionModel.findByIdAndUpdate(
       id,
       { status },
@@ -112,7 +111,7 @@ export class SubmissionService {
     ).exec();
   }
 
-  private async formatSubmission(submission: SubmissionDocument): Promise<FormattedSubmission> {
+  private async formatSubmission(submission: Submission): Promise<FormattedSubmission> {
     return {
       id: (submission._id as Types.ObjectId).toString(),
       formId: (submission.formId as Types.ObjectId).toString(),
@@ -123,28 +122,28 @@ export class SubmissionService {
       userAgent: submission.userAgent,
       name: submission.name,
       email: submission.email,
-      linkedInProfileId: submission.linkedInProfileId ? (submission.linkedInProfileId as Types.ObjectId).toString() : undefined,
+      linkedInProfileId: submission.linkedInProfileId,
       status: submission.status,
       matchScore: submission.matchScore || 0
     };
   }
 
-  async getSubmissionsByFormId(formId: string): Promise<SubmissionDocument[]> {
+  async getSubmissionsByFormId(formId: string): Promise<Submission[]> {
     return this.submissionModel
       .find({ formId: new Types.ObjectId(formId), isDeleted: false })
       .sort({ submittedAt: -1 })
       .exec();
   }
 
-  async create(submission: Partial<ISubmission>): Promise<SubmissionDocument> {
+  async create(submission: Partial<Submission>): Promise<Submission> {
     const createdSubmission = new this.submissionModel(submission);
     return createdSubmission.save();
   }
 
   async updateCharacterTraits(
     id: string,
-    traits: Partial<SubmissionDocument['characterTraits']>
-  ): Promise<SubmissionDocument | null> {
+    traits: Partial<Submission['characterTraits']>
+  ): Promise<Submission | null> {
     return this.submissionModel.findByIdAndUpdate(
       id,
       { 
@@ -159,8 +158,8 @@ export class SubmissionService {
 
   async updateFamilyInfo(
     id: string,
-    info: Partial<SubmissionDocument['familyInfo']>
-  ): Promise<SubmissionDocument | null> {
+    info: Partial<Submission['familyInfo']>
+  ): Promise<Submission | null> {
     return this.submissionModel.findByIdAndUpdate(
       id,
       { 
@@ -176,7 +175,7 @@ export class SubmissionService {
   async updateMatchScore(
     id: string,
     score: number
-  ): Promise<SubmissionDocument | null> {
+  ): Promise<Submission | null> {
     return this.submissionModel.findByIdAndUpdate(
       id,
       { 
@@ -267,7 +266,7 @@ export class SubmissionService {
     }
   }
 
-  async getSubmissionById(id: string): Promise<SubmissionDocument | null> {
+  async getSubmissionById(id: string): Promise<Submission | null> {
     return this.submissionModel.findById(id).exec();
   }
 

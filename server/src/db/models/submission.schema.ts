@@ -32,7 +32,7 @@ const submissionSchema = new Schema<SubmissionDocument>(
     ipAddress: String,
     userAgent: String,
     linkedInProfileId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "LinkedinProfile",
       required: false,
     },

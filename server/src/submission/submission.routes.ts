@@ -14,7 +14,7 @@ import PersonalityModel from "../db/models/personality.schema";
 import { Router } from 'express';
 import { SubmissionService } from './submission.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Submission } from './submission.schema';
+import { Submission } from '../types/submission.type';
 import { Model } from 'mongoose';
 import { FormService } from '../form/form.service';
 import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
@@ -22,7 +22,7 @@ import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
 const router = Router();
 
 // Get the model through NestJS's dependency injection
-const submissionModel = getModelToken(Submission.name);
+const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
 const matchModel = getModelToken('Match') as unknown as Model<any>;
 const personalityModel = getModelToken('Personality') as unknown as Model<any>;
 const formModel = getModelToken('Form') as unknown as Model<any>;
@@ -33,25 +33,36 @@ const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel);
 const formService = new FormService(formModel, matchCriteriaService);
 
 const submissionService = new SubmissionService(
-  submissionModel as unknown as Model<Submission>,
+  submissionModel,
   null as any,
   null as any
 );
 
 const matchService = new MatchService(
   matchModel,
+  personalityModel,
+  submissionModel,
+  matchModel,
+  matchCriteriaModel,
   submissionService
 );
 
 const personalityService = new PersonalityService(
   personalityModel,
-  submissionModel as unknown as Model<Submission>,
+  submissionModel,
   matchService
 );
 
 // Update submission service with proper dependencies
-submissionService.matchService = matchService;
-submissionService.personalityService = personalityService;
+Object.defineProperty(submissionService, 'matchService', {
+  value: matchService,
+  writable: true
+});
+
+Object.defineProperty(submissionService, 'personalityService', {
+  value: personalityService,
+  writable: true
+});
 
 const controller = new SubmissionController(submissionService);
 
