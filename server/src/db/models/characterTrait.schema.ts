@@ -18,7 +18,7 @@ const characterTraitSchema = new Schema<CharacterTraitDocument>(
   {
     name: { type: String, required: true },
     description: { type: String },
-    schoolId: { type: Schema.Types.ObjectId, ref: "CharacterTraitSchool" },
+    schoolId: { type: Schema.Types.ObjectId, ref: "CharacterTraitSchool", required: true },
     index: { type: Number },
     weight: { type: Number, default: 1 },
     compatibleTraits: [{ type: Schema.Types.ObjectId, ref: "CharacterTrait" }],
@@ -38,6 +38,9 @@ characterTraitSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
 });
+
+characterTraitSchoolSchema.index({ name: 1 }, { unique: true });
+characterTraitSchema.index({ schoolId: 1, name: 1 }, { unique: true });
 
 const CharacterTraitSchool = mongoose.model<CharacterTraitSchoolDocument>(
   "CharacterTraitSchool",

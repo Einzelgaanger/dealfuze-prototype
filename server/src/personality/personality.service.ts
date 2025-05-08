@@ -13,7 +13,7 @@ import { AppConfig } from '../config';
 import { LinkedinProfileStatus } from '../types/linkedinProfile.type';
 import { SubmissionStatus } from '../types/submission.type';
 import MatchCriteriaModel from '../db/models/matchCriteria.schema';
-import CharacterTraitModel from '../db/models/characterTrait.schema';
+import { CharacterTrait } from '../db/models/characterTrait.schema';
 
 type ObjectId = Types.ObjectId;
 
@@ -147,7 +147,7 @@ export class PersonalityService {
     const suggestedTraits = JSON.parse(completion.data.choices[0].text || '[]');
 
     // Find matching character traits in the database
-    const matchingTraits = await CharacterTraitModel.find({
+    const matchingTraits = await CharacterTrait.find({
       name: { $in: suggestedTraits }
     });
 
@@ -281,7 +281,7 @@ export class PersonalityService {
       const suggestedTraits = JSON.parse(completion.data.choices[0].text || '[]');
       
       // Find matching character traits in the database
-      const matchingTraits = await CharacterTraitModel.find({
+      const matchingTraits = await CharacterTrait.find({
         name: { $in: suggestedTraits }
       });
 

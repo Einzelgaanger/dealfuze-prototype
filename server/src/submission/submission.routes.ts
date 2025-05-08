@@ -14,15 +14,15 @@ import PersonalityModel from "../db/models/personality.schema";
 import { Router } from 'express';
 import { SubmissionService } from './submission.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Submission } from '../types/submission.type';
-import { Model } from 'mongoose';
+import { Submission, SubmissionDocument } from '../types/submission.type';
+import { Model, Types } from 'mongoose';
 import { FormService } from '../form/form.service';
 import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
 
 const router = Router();
 
 // Get the model through NestJS's dependency injection
-const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
+const submissionModel = getModelToken('Submission') as unknown as Model<SubmissionDocument>;
 const matchModel = getModelToken('Match') as unknown as Model<any>;
 const personalityModel = getModelToken('Personality') as unknown as Model<any>;
 const formModel = getModelToken('Form') as unknown as Model<any>;
@@ -226,6 +226,8 @@ router.post(
         [{}]
       );
     }
+
+    const submissionId = new Types.ObjectId(submission._id.toString());
 
     return res.status(200).json({
       success: true,

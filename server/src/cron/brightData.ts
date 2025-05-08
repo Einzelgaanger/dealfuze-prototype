@@ -1,18 +1,18 @@
-import LinkedinProfileModel from "../db/models/linkedinProfile.schema";
-import { LinkedinProfileStatus } from "../types/linkedinProfile.type";
-import { AppConfig } from "../config";
-import { PersonalityService } from "../personality/personality.service";
-import { MatchService } from "../match/match.service";
-import { Model } from "mongoose";
-import { Submission } from "../types/submission.type";
-import { Match } from "../types/match.type";
+import { Model } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
+import { MatchService } from '../match/match.service';
+import { PersonalityService } from '../personality/personality.service';
 import { MatchCriteriaService } from '../matchCriteria/matchCriteria.service';
 import { FormService } from '../form/form.service';
 import { SubmissionService } from '../submission/submission.service';
-import { IForm } from '../types/form.type';
-import { IPersonality } from '../types/personality.type';
-import { IMatchCriteria } from '../types/matchCriteria.type';
+import { Submission, SubmissionDocument } from '../types/submission.type';
+import { Match, MatchDocument } from '../types/match.type';
+import { Form, FormDocument } from '../types/form.type';
+import { Personality, PersonalityDocument } from '../types/personality.type';
+import { MatchCriteria, MatchCriteriaDocument } from '../types/matchCriteria.type';
+import { LinkedinProfileStatus } from '../types/linkedinProfile.type';
+import LinkedinProfileModel from '../db/models/linkedinProfile.schema';
+import { AppConfig } from "../config";
 
 export async function brightDataCron() {
   const pendingProfiles = await LinkedinProfileModel.find({
@@ -20,11 +20,11 @@ export async function brightDataCron() {
   });
 
   // Get models through NestJS's dependency injection
-  const matchModel = getModelToken('Match') as unknown as Model<Match>;
-  const submissionModel = getModelToken('Submission') as unknown as Model<Submission>;
-  const personalityModel = getModelToken('Personality') as unknown as Model<IPersonality>;
-  const formModel = getModelToken('Form') as unknown as Model<IForm>;
-  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<IMatchCriteria>;
+  const matchModel = getModelToken('Match') as unknown as Model<MatchDocument>;
+  const submissionModel = getModelToken('Submission') as unknown as Model<SubmissionDocument>;
+  const personalityModel = getModelToken('Personality') as unknown as Model<PersonalityDocument>;
+  const formModel = getModelToken('Form') as unknown as Model<FormDocument>;
+  const matchCriteriaModel = getModelToken('MatchCriteria') as unknown as Model<MatchCriteriaDocument>;
 
   // Initialize services in the correct order
   const matchCriteriaService = new MatchCriteriaService(matchCriteriaModel);

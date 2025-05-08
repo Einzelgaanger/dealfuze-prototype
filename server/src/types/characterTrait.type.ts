@@ -3,25 +3,27 @@ import { Document, Types } from 'mongoose';
 export interface CharacterTraitSchool {
   _id: Types.ObjectId;
   name: string;
-  description: string;
+  description?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface CharacterTraitSchoolDocument extends Omit<CharacterTraitSchool, '_id'>, Document {}
+export interface CharacterTraitSchoolDocument extends Document, Omit<CharacterTraitSchool, '_id'> {}
 
 export interface CharacterTrait {
   _id: Types.ObjectId;
-  schoolId: Types.ObjectId;
   name: string;
-  description: string;
-  index: number;
-  relatedTraits: Types.ObjectId[];
+  description?: string;
+  schoolId: Types.ObjectId;
+  index?: number;
+  weight: number;
+  compatibleTraits: Types.ObjectId[];
+  incompatibleTraits: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface CharacterTraitDocument extends Omit<CharacterTrait, '_id'>, Document {}
+export interface CharacterTraitDocument extends Document, Omit<CharacterTrait, '_id'> {}
 
 export interface CharacterTraitIndex {
   _id: Types.ObjectId;

@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { CharacterTrait, CharacterTraitSchool } from '../db/models/characterTrait.schema';
 import { CharacterTraitDocument, CharacterTraitSchoolDocument } from '../types/characterTrait.type';
-import CharacterTrait, { CharacterTraitSchool } from '../db/models/characterTrait.schema';
 
 @Injectable()
 export class CharacterTraitService {
   constructor(
     @InjectModel(CharacterTrait.name)
-    private characterTraitModel: Model<CharacterTraitDocument>,
+    private readonly characterTraitModel: Model<CharacterTraitDocument>,
     @InjectModel(CharacterTraitSchool.name)
-    private characterTraitSchoolModel: Model<CharacterTraitSchoolDocument>
+    private readonly characterTraitSchoolModel: Model<CharacterTraitSchoolDocument>
   ) {}
 
   async createSchool(name: string, description: string): Promise<CharacterTraitSchoolDocument> {
