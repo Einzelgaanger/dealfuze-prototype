@@ -37,14 +37,9 @@ const installTsNode = () => {
 const startServer = () => {
   const serverPath = path.join(__dirname, 'server.ts');
   
-  // Check if server.ts exists
-  if (!fs.existsSync(serverPath)) {
-    console.error(`Server file not found at ${serverPath}`);
-    process.exit(1);
-  }
   
   console.log(`Starting server from ${serverPath}...`);
-  const child = exec(`npx ts-node ${serverPath}`, (error, stdout, stderr) => {
+  const child = exec(`node ${serverPath}`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error starting server: ${error.message}`);
       return;
