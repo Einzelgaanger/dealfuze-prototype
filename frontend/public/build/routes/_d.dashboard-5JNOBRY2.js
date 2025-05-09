@@ -3,24 +3,24 @@ import {
 } from "/build/_shared/chunk-MKAXAYAI.js";
 import {
   Button
-} from "/build/_shared/chunk-7LFJABGF.js";
+} from "/build/_shared/chunk-AIKIHU6L.js";
 import {
   Link as Link2,
   Plus,
   SquarePen,
   Users
-} from "/build/_shared/chunk-DVRXU2YJ.js";
+} from "/build/_shared/chunk-5ZGHMSNG.js";
 import "/build/_shared/chunk-KUGFZWZA.js";
 import {
   Link,
   Outlet,
   init_esm,
   useLoaderData
-} from "/build/_shared/chunk-V76AKOHL.js";
+} from "/build/_shared/chunk-AR5LFCZI.js";
 import {
   createHotContext,
   init_remix_hmr
-} from "/build/_shared/chunk-JDDA2FTR.js";
+} from "/build/_shared/chunk-O46JBUDP.js";
 import "/build/_shared/chunk-M3R3PWNJ.js";
 import "/build/_shared/chunk-6SFGVGP7.js";
 import {
@@ -54,7 +54,7 @@ if (import.meta) {
     //@ts-expect-error
     "app\\routes\\_d.dashboard.tsx"
   );
-  import.meta.hot.lastModified = "1746337063453.9258";
+  import.meta.hot.lastModified = "1746775400956.4233";
 }
 function Dashboard() {
   _s();
@@ -86,7 +86,7 @@ function Dashboard() {
         columnNumber: 36
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("table", { className: "w-full text-sm", children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("tbody", { children: pipelines.map((pipeline) => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("tr", { className: "border-b border-gray-200 last:border-b-0", children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("td", { className: "p-4", children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-4", children: [
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: `/pipeline/${pipeline.id}`, className: "flex flex-col md:flex-row items-start md:items-center gap-4 justify-between flex-1 hover:bg-gray-50 rounded-lg p-2 transition-colors w-full", children: [
+        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: `/_d.pipeline+/${pipeline.id}`, className: "flex flex-col md:flex-row items-start md:items-center gap-4 justify-between flex-1 hover:bg-gray-50 rounded-lg p-2 transition-colors w-full", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "w-full md:w-1/2", children: pipeline.name }, void 0, false, {
             fileName: "app/routes/_d.dashboard.tsx",
             lineNumber: 49,
@@ -142,7 +142,7 @@ function Dashboard() {
           columnNumber: 21
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "flex items-center gap-4 w-full md:w-auto justify-start md:justify-end", children: [
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: `/pipeline/${pipeline.id}/form`, className: "flex items-center gap-2 border border-gray-200 rounded-lg p-2 hover:bg-gray-50", children: [
+          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(Link, { to: `/_d.pipeline+/${pipeline.id}_.form`, className: "flex items-center gap-2 border border-gray-200 rounded-lg p-2 hover:bg-gray-50", children: [
             /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(SquarePen, { size: 16, strokeWidth: 1 }, void 0, false, {
               fileName: "app/routes/_d.dashboard.tsx",
               lineNumber: 67,
@@ -239,4 +239,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   Dashboard as default
 };
-//# sourceMappingURL=/build/routes/_d.dashboard-PEXXLYR3.js.map
+//# sourceMappingURL=/build/routes/_d.dashboard-5JNOBRY2.js.map

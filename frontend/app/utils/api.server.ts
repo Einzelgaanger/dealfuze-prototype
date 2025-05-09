@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Use environment variable for API URL in production, fallback to localhost for development
-const API_URL = process.env.API_URL || "http://localhost:9876/api";
+const API_URL = process.env.API_URL || "http://localhost:7777/api";
 
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -38,7 +38,7 @@ async function fetchWithAuth<TResponse, TRequest>(
 ): Promise<TResponse> {
   const url = `${API_URL}${endpoint}`;
 
-  console.log(url);
+  console.log('Making API request to:', url);
 
   if (!token && options.loaderArgs) {
     const { getToken } = await getAuth(options.loaderArgs);
@@ -51,26 +51,42 @@ async function fetchWithAuth<TResponse, TRequest>(
 
   const headers = new Headers({
     "Content-Type": "application/json",
+    "Accept": "application/json",
     ...options.headers,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   });
 
-  const response = await fetch(url, {
-    ...options,
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
 
-  const responseData = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const responseData = await response.json().catch(() => ({}));
+      console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: responseData,
+        url
+      });
+      throw new APIError(response.status, responseData.error || response.statusText, responseData);
+    }
 
-  if (!response.ok) {
-    console.log(responseData);
-    throw new APIError(response.status, responseData.error, responseData);
+    const responseData = await response.json().catch(() => ({}));
+    return responseData;
+  } catch (error) {
+    console.error('Fetch Error:', {
+      url,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      cause: error instanceof Error ? error.cause : undefined,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
   }
-
-  return responseData;
 }
 
 export const api = {

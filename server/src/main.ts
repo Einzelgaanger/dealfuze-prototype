@@ -23,9 +23,10 @@ async function bootstrap() {
   
   // Enable CORS with specific options
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://192.168.100.14:3000'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   });
   
   // Use helmet for security
@@ -39,7 +40,11 @@ async function bootstrap() {
   
   // Add health check endpoint
   app.getHttpAdapter().get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
+    res.status(200).json({ 
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
   });
   
   // Add API prefix to all routes

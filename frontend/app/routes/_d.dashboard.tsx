@@ -37,7 +37,7 @@ export default function Dashboard() {
                 <td className="p-4">
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-4">
                     <Link
-                      to={`/pipeline/${pipeline.id}`}
+                      to={`/_d.pipeline+/${pipeline.id}`}
                       className="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between flex-1 hover:bg-gray-50 rounded-lg p-2 transition-colors w-full"
                     >
                       <div className="w-full md:w-1/2">{pipeline.name}</div>
@@ -62,7 +62,7 @@ export default function Dashboard() {
                     </Link>
                     <div className="flex items-center gap-4 w-full md:w-auto justify-start md:justify-end">
                       <Link
-                        to={`/pipeline/${pipeline.id}/form`}
+                        to={`/_d.pipeline+/${pipeline.id}_.form`}
                         className="flex items-center gap-2 border border-gray-200 rounded-lg p-2 hover:bg-gray-50"
                       >
                         <Edit size={16} strokeWidth={1} />
